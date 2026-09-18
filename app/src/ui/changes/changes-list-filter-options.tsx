@@ -169,51 +169,37 @@ export class ChangesListFilterOptions extends React.Component<
           </button>
         </div>
         <div className="filter-options">
-          <Checkbox
-            value={
-              this.props.fileListFilter.isIncludedInCommit
-                ? CheckboxValue.On
-                : CheckboxValue.Off
-            }
-            onChange={this.onFilterToIncludedInCommit}
-            label={`Included in commit (${includedFilesCount})`}
-          />
-          <Checkbox
-            value={
-              this.props.fileListFilter.isExcludedFromCommit
-                ? CheckboxValue.On
-                : CheckboxValue.Off
-            }
-            onChange={this.onFilterExcludedFiles}
-            label={`Excluded from commit (${excludedFilesCount})`}
-          />
-          <Checkbox
-            value={
-              this.props.fileListFilter.isNewFile
-                ? CheckboxValue.On
-                : CheckboxValue.Off
-            }
-            onChange={this.onFilterNewFiles}
-            label={`New files (${newFilesCount})`}
-          />
-          <Checkbox
-            value={
-              this.props.fileListFilter.isModifiedFile
-                ? CheckboxValue.On
-                : CheckboxValue.Off
-            }
-            onChange={this.onFilterModifiedFiles}
-            label={`Modified files (${modifiedFilesCount})`}
-          />
-          <Checkbox
-            value={
-              this.props.fileListFilter.isDeletedFile
-                ? CheckboxValue.On
-                : CheckboxValue.Off
-            }
-            onChange={this.onFilterDeletedFiles}
-            label={`Deleted files (${deletedFilesCount})`}
-          />
+          {this.renderOption(
+            'Included in commit',
+            includedFilesCount,
+            this.props.fileListFilter.isIncludedInCommit,
+            this.onFilterToIncludedInCommit
+          )}
+          {this.renderOption(
+            'Excluded from commit',
+            excludedFilesCount,
+            this.props.fileListFilter.isExcludedFromCommit,
+            this.onFilterExcludedFiles
+          )}
+          <div className="filter-options-separator" role="separator" />
+          {this.renderOption(
+            'New files',
+            newFilesCount,
+            this.props.fileListFilter.isNewFile,
+            this.onFilterNewFiles
+          )}
+          {this.renderOption(
+            'Modified files',
+            modifiedFilesCount,
+            this.props.fileListFilter.isModifiedFile,
+            this.onFilterModifiedFiles
+          )}
+          {this.renderOption(
+            'Deleted files',
+            deletedFilesCount,
+            this.props.fileListFilter.isDeletedFile,
+            this.onFilterDeletedFiles
+          )}
         </div>
         {filtersActive && (
           <div className="filter-options-footer">
@@ -221,6 +207,27 @@ export class ChangesListFilterOptions extends React.Component<
           </div>
         )}
       </Popover>
+    )
+  }
+
+  private renderOption(
+    label: string,
+    count: number,
+    checked: boolean,
+    onChange: () => void
+  ) {
+    return (
+      <Checkbox
+        className={classNames('filter-option', { empty: count === 0 })}
+        value={checked ? CheckboxValue.On : CheckboxValue.Off}
+        onChange={onChange}
+        label={
+          <>
+            <span className="filter-option-label">{label}</span>
+            <span className="filter-option-count">{count}</span>
+          </>
+        }
+      />
     )
   }
 

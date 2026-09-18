@@ -1,0 +1,111 @@
+// The filter options popover of the changes list, restyled for the fork.
+// Loaded after _changes-list.scss and overrides its popover rules.
+
+.changes-list-container.filtered-changes-list .filter-popover {
+  width: 240px;
+  min-width: 0;
+  text-align: left;
+
+  .popover-content {
+    padding: 0;
+  }
+
+  .filter-popover-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--spacing-half) var(--spacing-half) var(--spacing-half) var(--spacing);
+    border-bottom: var(--base-border);
+
+    h3 {
+      margin: 0;
+      font-size: var(--font-size);
+      font-weight: var(--font-weight-semibold);
+    }
+
+    .close {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 24px;
+      height: 24px;
+      margin: 0;
+      border-radius: var(--border-radius);
+
+      &:hover {
+        color: var(--text-color);
+        background-color: var(--box-hover-background-color);
+      }
+    }
+  }
+
+  .filter-options {
+    margin: 0;
+    padding: var(--spacing-half) 0;
+  }
+
+  .filter-options-separator {
+    height: 1px;
+    margin: var(--spacing-half) var(--spacing);
+    background-color: var(--box-border-color);
+  }
+
+  .filter-option {
+    margin: 0 var(--spacing-half);
+    padding: 0 var(--spacing-half);
+    border-radius: var(--border-radius);
+
+    &:hover {
+      background-color: var(--box-hover-background-color);
+    }
+
+    input {
+      flex-shrink: 0;
+    }
+
+    // The whole row is the label, so clicking anywhere toggles the filter
+    label {
+      display: flex;
+      flex: 1;
+      align-items: center;
+      gap: var(--spacing);
+      min-width: 0;
+      padding: 6px 0;
+      cursor: pointer;
+    }
+
+    .filter-option-label {
+      flex: 1;
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+    }
+
+    .filter-option-count {
+      min-width: 20px;
+      padding: 0 6px;
+      border-radius: 10px;
+      // Translucent so it reads on both themes and on a hovered row
+      background-color: rgba(127, 127, 127, 0.18);
+      color: var(--text-secondary-color);
+      font-size: var(--font-size-sm);
+      line-height: 18px;
+      text-align: center;
+      font-variant-numeric: tabular-nums;
+    }
+
+    &.empty .filter-option-label {
+      color: var(--text-secondary-color);
+    }
+  }
+
+  .filter-options-footer {
+    margin: 0;
+    padding: var(--spacing-half) var(--spacing);
+    border-top: var(--base-border);
+
+    .button-component {
+      width: 100%;
+    }
+  }
+}
