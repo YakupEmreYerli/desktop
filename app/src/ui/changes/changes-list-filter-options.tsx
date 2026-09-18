@@ -96,31 +96,6 @@ export class ChangesListFilterOptions extends React.Component<
     this.setState({ isFilterOptionsOpen: false })
   }
 
-  private onFilterToIncludedInCommit = () => {
-    this.props.onFilterToIncludedInCommit()
-    this.closeFilterOptions()
-  }
-
-  private onFilterExcludedFiles = () => {
-    this.props.onFilterExcludedFiles()
-    this.closeFilterOptions()
-  }
-
-  private onFilterDeletedFiles = () => {
-    this.props.onFilterDeletedFiles()
-    this.closeFilterOptions()
-  }
-
-  private onFilterModifiedFiles = () => {
-    this.props.onFilterModifiedFiles()
-    this.closeFilterOptions()
-  }
-
-  private onFilterNewFiles = () => {
-    this.props.onFilterNewFiles()
-    this.closeFilterOptions()
-  }
-
   private onClearAllFilters = () => {
     this.props.onClearAllFilters()
     this.closeFilterOptions()
@@ -173,32 +148,32 @@ export class ChangesListFilterOptions extends React.Component<
             'Included in commit',
             includedFilesCount,
             this.props.fileListFilter.isIncludedInCommit,
-            this.onFilterToIncludedInCommit
+            this.props.onFilterToIncludedInCommit
           )}
           {this.renderOption(
             'Excluded from commit',
             excludedFilesCount,
             this.props.fileListFilter.isExcludedFromCommit,
-            this.onFilterExcludedFiles
+            this.props.onFilterExcludedFiles
           )}
           <div className="filter-options-separator" role="separator" />
           {this.renderOption(
             'New files',
             newFilesCount,
             this.props.fileListFilter.isNewFile,
-            this.onFilterNewFiles
+            this.props.onFilterNewFiles
           )}
           {this.renderOption(
             'Modified files',
             modifiedFilesCount,
             this.props.fileListFilter.isModifiedFile,
-            this.onFilterModifiedFiles
+            this.props.onFilterModifiedFiles
           )}
           {this.renderOption(
             'Deleted files',
             deletedFilesCount,
             this.props.fileListFilter.isDeletedFile,
-            this.onFilterDeletedFiles
+            this.props.onFilterDeletedFiles
           )}
         </div>
         {filtersActive && (
