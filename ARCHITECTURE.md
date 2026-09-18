@@ -19,6 +19,7 @@ conflicts.
 | `app/styles/ui/_changes.scss` | imports `changes/filter-popover` |
 | `app/src/ui/changes/changes-list-filter-options.tsx` | options rendered through `renderOption`, popover stays open on toggle |
 | `app/package.json`, `app/yarn.lock` | `pdfjs-dist` dependency |
+| `app/src/main-process/app-window.ts` | calls `repairWindowStateFile()` before `windowStateKeeper` |
 
 ## PDF previews in diffs
 
@@ -78,6 +79,17 @@ how many files would remain if that filter were added. Styles in
 `app/styles/ui/changes/_filter-popover.scss` override upstream's popover rules
 in `_changes-list.scss`.
 
+## Window size on Wayland
+
+Under Wayland, Electron can't read a window's position, so
+electron-window-state saves it as 0,0. When the display doesn't start at 0,0
+(several monitors), that position counts as off screen and the library resets
+the saved state, size included. `app/src/main-process/window-state-position.ts`
+rewrites `window-state.json` in the user data directory before the library
+reads it: an off-screen position is moved to the display's origin and the size
+is clamped to the display. The size survives; the compositor places the window.
+Linux only.
+
 ## Linux install
 
 `script/linux-kur.sh` runs `yarn build:prod` (skip it with `--derleme`) and
@@ -94,5 +106,5 @@ refuses to run while the installed app is open.
 
 `.github/workflows/fork-ci.yml` runs lint, unit tests and a production build
 on Ubuntu for pushes to `development` and for pull requests. Upstream's
-workflows stay in the tree unchanged; they target runners and secrets the fork
-doesn't have.
+workflows stay in the tree unchanged but are disabled in the fork's Actions
+settings; they target runners and secrets the fork doesn't have.

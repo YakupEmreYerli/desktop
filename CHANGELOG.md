@@ -15,6 +15,11 @@ notes are in `changelog.json` and on
   Linux, keeping existing GitHub Desktop settings and sign-in.
 - Linux CI for the fork (lint, unit tests, production build).
 
+### Fixed
+
+- The window's size is remembered on Linux under Wayland with several
+  monitors; before, it opened at the default size every time.
+
 ### Changed
 
 - Changes filter popover: count badges, full-width rows, grouped options,

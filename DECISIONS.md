@@ -11,6 +11,25 @@ root files (`AGENTS.md`, `ARCHITECTURE.md`, …) that upstream doesn't have.
 English is the main language so the fork reads like upstream; the README also
 has a Turkish version.
 
+## 2026-09-18: Repair the saved window state instead of replacing the library
+
+The Wayland window size bug sits in electron-window-state's visibility check.
+Rewriting its state file before it loads is a one-line hook in upstream's
+`app-window.ts`. Patching or replacing the library would touch more upstream
+code for the same result.
+
+## 2026-09-18: Upstream workflows disabled, not deleted
+
+Upstream CI needs macOS and Windows larger runners plus signing secrets, and
+the triage workflows act on upstream's issues. Deleting or editing them would
+conflict on every merge. They're disabled in the fork's Actions settings and
+the fork runs its own `fork-ci.yml` on Linux.
+
+## 2026-09-18: Upstream's feature branches removed from the fork
+
+Forking copied about 200 upstream branches to `origin`. None held fork work
+and they remain on upstream, so the fork keeps only `development`.
+
 ## 2026-09-18: Filter popover stays open
 
 Closing after every toggle made picking two filters take two trips. With the

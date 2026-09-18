@@ -20,6 +20,7 @@ import { menuFromElectronMenu } from '../models/app-menu'
 import { now } from './now'
 import * as path from 'path'
 import windowStateKeeper from 'electron-window-state'
+import { repairWindowStateFile } from './window-state-position'
 import * as ipcMain from './ipc-main'
 import * as ipcWebContents from './ipc-webcontents'
 import {
@@ -45,6 +46,7 @@ export class AppWindow {
   private shouldMaximizeOnShow = false
 
   public constructor() {
+    repairWindowStateFile()
     const savedWindowState = windowStateKeeper({
       defaultWidth: this.minWidth,
       defaultHeight: this.minHeight,
