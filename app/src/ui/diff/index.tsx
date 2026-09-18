@@ -138,9 +138,11 @@ export class Diff extends React.Component<IDiffProps, IDiffState> {
       case DiffType.Image:
         return this.renderImage(diff)
       case DiffType.LargeText: {
-        return this.state.forceShowLargeDiff
-          ? this.renderLargeText(diff)
-          : this.renderLargeTextDiff()
+        return this.renderWithHtmlPreview(
+          this.state.forceShowLargeDiff
+            ? this.renderLargeText(diff)
+            : this.renderLargeTextDiff()
+        )
       }
       case DiffType.Unrenderable:
         return this.renderUnrenderableDiff()
@@ -269,18 +271,23 @@ export class Diff extends React.Component<IDiffProps, IDiffState> {
       return <div className="panel empty">No content changes found</div>
     }
 
+    return this.renderWithHtmlPreview(this.renderTextDiff(diff))
+  }
+
+  /** For HTML files, offer a rendered preview next to the given code view */
+  private renderWithHtmlPreview(code: JSX.Element) {
     const { fileContents } = this.props
-    if (isHtmlPath(this.props.file.path) && fileContents !== null) {
-      return (
-        <HtmlDiff
-          repositoryPath={this.props.repository.path}
-          fileContents={fileContents}
-          code={this.renderTextDiff(diff)}
-        />
-      )
+    if (!isHtmlPath(this.props.file.path) || fileContents === null) {
+      return code
     }
 
-    return this.renderTextDiff(diff)
+    return (
+      <HtmlDiff
+        repositoryPath={this.props.repository.path}
+        fileContents={fileContents}
+        code={code}
+      />
+    )
   }
 
   private renderSubmoduleDiff(diff: ISubmoduleDiff) {

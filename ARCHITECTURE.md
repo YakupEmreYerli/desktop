@@ -14,7 +14,7 @@ conflicts.
 |---|---|
 | `app/src/lib/git/diff.ts` | `buildDiff` sends `.pdf` paths to `getImageDiff`; `getMediaType` returns `application/pdf` |
 | `app/src/ui/diff/index.tsx` | `renderImage` renders `PdfDiff` when the image is a PDF |
-| `app/src/ui/diff/index.tsx` | `renderText` renders `HtmlDiff` for `.html`/`.htm` files |
+| `app/src/ui/diff/index.tsx` | `renderText` and the large text case wrap `.html`/`.htm` files in `HtmlDiff` (`renderWithHtmlPreview`) |
 | `app/webpack.common.ts` | `PdfjsRuntimePlugin` in the renderer config |
 | `app/styles/_ui.scss` | imports `ui/pdf-diff` and `ui/html-diff` |
 | `app/styles/ui/_changes.scss` | imports `changes/filter-popover` |
@@ -72,7 +72,7 @@ and committed PDFs, text-looking PDFs and media types.
 ## HTML previews in diffs
 
 An HTML file stays a text diff (`DiffType.Text`); only the view changes, so
-`lib/git/diff.ts` isn't touched. `Diff.renderText` hands `.html`/`.htm` files
+`lib/git/diff.ts` isn't touched. `Diff.renderText` (and the large text diff path) hands `.html`/`.htm` files
 to `HtmlDiff` (`app/src/ui/diff/html-diffs/`) together with the regular text
 diff element. A Preview/Code switch picks between the rendered pages and that
 text diff; the choice is kept in local storage (`html-diff-show-code`), and
