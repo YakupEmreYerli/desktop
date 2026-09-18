@@ -47,13 +47,23 @@
   }
 
   .html-diff-page {
+    position: relative;
     flex: 1;
-    width: 100%;
     min-height: 0;
+    overflow: hidden;
     border: 1px solid var(--box-border-color);
     border-radius: var(--border-radius);
     // Pages bring their own colours; without them they're white, as in a browser
     background: #fff;
+
+    // Laid out at desktop width and scaled to the column, see html-frame.tsx
+    iframe {
+      position: absolute;
+      top: 0;
+      left: 0;
+      border: none;
+      transform-origin: 0 0;
+    }
 
     &.loading {
       display: flex;

@@ -8,6 +8,7 @@ import { buildHtmlPreview, PreviewAssetReader } from '../../../lib/html'
 import { getBoolean, setBoolean } from '../../../lib/local-storage'
 import { TabBar, TabBarType } from '../../tab-bar'
 import { IFileContents } from '../syntax-highlighting'
+import { HtmlFrame } from './html-frame'
 
 /** Remembers whether HTML files open in the code view instead of the preview */
 const ShowCodeKey = 'html-diff-show-code'
@@ -165,14 +166,9 @@ export class HtmlDiff extends React.Component<IHtmlDiffProps, IHtmlDiffState> {
         {document === null ? (
           <div className="html-diff-page loading">Loading preview…</div>
         ) : (
-          <iframe
-            className="html-diff-page"
+          <HtmlFrame
             title={`${title} version of the page`}
-            // Scripts run, but in an opaque origin: no access to the app,
-            // its Node APIs or local files, and no popups or navigation of
-            // the app window.
-            sandbox="allow-scripts"
-            srcDoc={document}
+            document={document}
           />
         )}
       </div>

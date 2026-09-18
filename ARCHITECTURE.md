@@ -93,6 +93,12 @@ URLs. Remote URLs load as they are. A `<base target="_blank">` replaces any
 existing `<base>`, so clicking a link opens nothing instead of navigating the
 frame.
 
+**Scaling.** `html-frame.tsx` lays each page out at a 1280 px wide viewport
+and scales the frame down to its column with a CSS transform, so a narrow
+column (two versions side by side) shows the desktop layout shrunk, like a
+PDF page, instead of the page's mobile layout. Columns wider than 1280 px
+use their own width.
+
 **Limits.** Assets are read from the working tree even when an older version
 of the page is shown. `PreviewAssetReader` reads only regular files inside the
 repository (after resolving symlinks) and up to 5 MB each, so a page can't
