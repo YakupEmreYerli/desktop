@@ -1,0 +1,44 @@
+# CI for the YakupEmreYerli/desktop fork. The upstream workflows (ci.yml and
+# friends) target macOS/Windows runners and signing secrets the fork doesn't
+# have. They're left unedited so merges from upstream stay conflict free.
+name: Fork CI
+
+on:
+  push:
+    branches: [development]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: fork-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  linux:
+    name: Lint, test and build (Linux)
+    if: github.repository == 'YakupEmreYerli/desktop'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          submodules: recursive
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: .nvmrc
+          cache: yarn
+      - name: Install system libraries
+        run: sudo apt-get update && sudo apt-get install -y libsecret-1-dev
+      - name: Install dependencies
+        run: yarn
+      - name: Lint
+        run: yarn lint
+      - name: Unit tests
+        run: |
+          yarn test:setup
+          yarn test:unit
+      - name: Build
+        run: yarn build:prod
