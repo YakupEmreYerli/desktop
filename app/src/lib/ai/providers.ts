@@ -63,6 +63,25 @@ const SecretKey = `${
   __DEV__ ? 'GitHub Desktop Dev' : 'GitHub Desktop'
 } - AI provider`
 
+const settingsListeners = new Set<() => void>()
+
+/**
+ * Call `listener` whenever the provider, a model or a key changes, so views
+ * waiting for a provider can start. Returns a function that unsubscribes.
+ */
+export function onAISettingsChanged(listener: () => void) {
+  settingsListeners.add(listener)
+  return () => {
+    settingsListeners.delete(listener)
+  }
+}
+
+function notifySettingsChanged() {
+  for (const listener of settingsListeners) {
+    listener()
+  }
+}
+
 /** The provider the user picked, or null if none has been set up */
 export function getSelectedProvider(): AIProviderKind | null {
   const value = localStorage.getItem(ProviderKey)
@@ -75,6 +94,7 @@ export function setSelectedProvider(kind: AIProviderKind | null) {
   } else {
     localStorage.setItem(ProviderKey, kind)
   }
+  notifySettingsChanged()
 }
 
 export function getProviderModel(kind: AIProviderKind) {
@@ -89,6 +109,7 @@ export function setProviderModel(kind: AIProviderKind, model: string) {
   } else {
     localStorage.setItem(modelKey(kind), trimmed)
   }
+  notifySettingsChanged()
 }
 
 /** The API key stored in the OS keychain for a provider */
@@ -96,12 +117,14 @@ export function getProviderKey(kind: AIProviderKind) {
   return TokenStore.getItem(SecretKey, kind)
 }
 
-export function setProviderKey(kind: AIProviderKind, key: string) {
-  return TokenStore.setItem(SecretKey, kind, key.trim())
+export async function setProviderKey(kind: AIProviderKind, key: string) {
+  await TokenStore.setItem(SecretKey, kind, key.trim())
+  notifySettingsChanged()
 }
 
-export function deleteProviderKey(kind: AIProviderKind) {
-  return TokenStore.deleteItem(SecretKey, kind)
+export async function deleteProviderKey(kind: AIProviderKind) {
+  await TokenStore.deleteItem(SecretKey, kind)
+  notifySettingsChanged()
 }
 
 /** An error meant to be shown to the user as is */

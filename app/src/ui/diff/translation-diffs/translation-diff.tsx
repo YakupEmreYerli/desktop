@@ -12,6 +12,7 @@ import {
   getProviderModel,
   getSelectedProvider,
   isAIConfigured,
+  onAISettingsChanged,
 } from '../../../lib/ai/providers'
 import {
   getCachedTranslation,
@@ -76,6 +77,7 @@ export class TranslationDiff extends React.Component<
   ITranslationDiffState
 > {
   private abortController: AbortController | null = null
+  private unsubscribeSettings: (() => void) | null = null
   private documentElement: HTMLDivElement | null = null
   /** Documents already in Turkish are shown as plain code, no switch */
   private isTurkishCache: {
@@ -93,7 +95,19 @@ export class TranslationDiff extends React.Component<
   }
 
   public componentDidMount() {
+    this.unsubscribeSettings = onAISettingsChanged(this.onSettingsChanged)
     if (this.state.showTranslation) {
+      this.translate()
+    }
+  }
+
+  /** A provider set up (or changed) while this view waits: try again */
+  private onSettingsChanged = () => {
+    const { showTranslation, status } = this.state
+    if (
+      showTranslation &&
+      (status.kind === 'not-configured' || status.kind === 'error')
+    ) {
       this.translate()
     }
   }
@@ -110,6 +124,7 @@ export class TranslationDiff extends React.Component<
   }
 
   public componentWillUnmount() {
+    this.unsubscribeSettings?.()
     this.abortController?.abort()
   }
 
@@ -144,7 +159,6 @@ export class TranslationDiff extends React.Component<
     const controller = new AbortController()
     this.abortController = controller
 
-    this.setState({ status: { kind: 'checking' } })
     if (!(await isAIConfigured())) {
       if (!controller.signal.aborted) {
         this.setState({ status: { kind: 'not-configured' } })
@@ -157,7 +171,8 @@ export class TranslationDiff extends React.Component<
         force,
         signal: controller.signal,
         onProgress: (done, total) => {
-          if (!controller.signal.aborted) {
+          // Everything cached: go straight to done, no "Translating…" flash
+          if (!controller.signal.aborted && total > 0) {
             this.setState(state => ({
               status: { kind: 'translating', done, total },
               revision: state.revision + 1,
