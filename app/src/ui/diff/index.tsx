@@ -29,6 +29,8 @@ import {
 } from './image-diffs'
 import { PdfDiff } from './pdf-diffs'
 import { PdfMediaType } from '../../lib/pdf'
+import { HtmlDiff } from './html-diffs'
+import { isHtmlPath } from '../../lib/html'
 import { BinaryFile } from './binary-file'
 import { SideBySideDiff } from './side-by-side-diff'
 import { IFileContents } from './syntax-highlighting'
@@ -265,6 +267,17 @@ export class Diff extends React.Component<IDiffProps, IDiffState> {
       }
 
       return <div className="panel empty">No content changes found</div>
+    }
+
+    const { fileContents } = this.props
+    if (isHtmlPath(this.props.file.path) && fileContents !== null) {
+      return (
+        <HtmlDiff
+          repositoryPath={this.props.repository.path}
+          fileContents={fileContents}
+          code={this.renderTextDiff(diff)}
+        />
+      )
     }
 
     return this.renderTextDiff(diff)

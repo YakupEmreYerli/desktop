@@ -14,8 +14,9 @@ conflicts.
 |---|---|
 | `app/src/lib/git/diff.ts` | `buildDiff` sends `.pdf` paths to `getImageDiff`; `getMediaType` returns `application/pdf` |
 | `app/src/ui/diff/index.tsx` | `renderImage` renders `PdfDiff` when the image is a PDF |
+| `app/src/ui/diff/index.tsx` | `renderText` renders `HtmlDiff` for `.html`/`.htm` files |
 | `app/webpack.common.ts` | `PdfjsRuntimePlugin` in the renderer config |
-| `app/styles/_ui.scss` | imports `ui/pdf-diff` |
+| `app/styles/_ui.scss` | imports `ui/pdf-diff` and `ui/html-diff` |
 | `app/styles/ui/_changes.scss` | imports `changes/filter-popover` |
 | `app/src/ui/changes/changes-list-filter-options.tsx` | options rendered through `renderOption`, popover stays open on toggle |
 | `app/package.json`, `app/yarn.lock` | `pdfjs-dist` dependency |
@@ -67,6 +68,38 @@ development build and the packaged app.
 
 **Tests:** `app/test/unit/git/pdf-diff-test.ts` covers new, modified, deleted
 and committed PDFs, text-looking PDFs and media types.
+
+## HTML previews in diffs
+
+An HTML file stays a text diff (`DiffType.Text`); only the view changes, so
+`lib/git/diff.ts` isn't touched. `Diff.renderText` hands `.html`/`.htm` files
+to `HtmlDiff` (`app/src/ui/diff/html-diffs/`) together with the regular text
+diff element. A Preview/Code switch picks between the rendered pages and that
+text diff; the choice is kept in local storage (`html-diff-show-code`), and
+Preview is the default.
+
+**Contents.** The old and new source come from the `fileContents` the diff
+view already loads for syntax highlighting (`getFileContents`), so they match
+the index, working tree or commits being compared.
+
+**Frames.** Each version renders in an `<iframe sandbox="allow-scripts">`
+with `srcdoc`. Scripts run in an opaque origin: no Node APIs, no access to the
+app window, no popups. Such a frame can't load `file://` URLs, so
+`lib/html.ts` (`buildHtmlPreview`) parses the document with `DOMParser` and
+inlines what it refers to by relative or root-relative path as data URIs:
+stylesheets (as `<style>`, with their `url()` and `@import` references, three
+levels deep), scripts, images, `srcset`, media, icons and inline `style`
+URLs. Remote URLs load as they are. A `<base target="_blank">` replaces any
+existing `<base>`, so clicking a link opens nothing instead of navigating the
+frame.
+
+**Limits.** Assets are read from the working tree even when an older version
+of the page is shown. `PreviewAssetReader` reads only regular files inside the
+repository (after resolving symlinks) and up to 5 MB each, so a page can't
+inline, and then send off, files from elsewhere on the machine.
+
+Styles: `app/styles/ui/_html-diff.scss`. Tests:
+`app/test/unit/html-preview-test.ts`.
 
 ## Changes filter popover
 

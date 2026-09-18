@@ -3,6 +3,19 @@
 Why the fork is built the way it is. Newest first. How things work today is in
 `ARCHITECTURE.md`.
 
+## 2026-09-18: HTML previews as a view over the text diff
+
+HTML is text, and staging single lines only works in the text diff, so the
+preview is a switch on top of it rather than a new diff type like the PDF
+preview. The preview is the default because that's why the feature exists.
+Scripts run because many pages draw their content with them; the frame is
+sandboxed without `allow-same-origin`, which is what keeps them away from the
+app's Node APIs. Loading local files through `<base href="file://…">` was
+tried first: Chromium refuses `file://` loads from the sandbox's opaque
+origin, and allowing the same origin would hand scripts the app. Inlining the
+files as data URIs keeps the frame sandboxed and needs no custom protocol in
+the main process.
+
 ## 2026-09-18: Fork docs next to upstream's, README in `.github/`
 
 GitHub shows `.github/README.md` in place of the root `README.md`, so the fork

@@ -1,0 +1,71 @@
+// Rendered previews for HTML files, see app/src/ui/diff/html-diffs.
+
+.html-diff {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+
+  .html-diff-toolbar {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+    padding: var(--spacing-half) var(--spacing);
+    border-bottom: var(--base-border);
+
+    .tab-bar {
+      margin: 0;
+    }
+  }
+
+  .html-diff-pages {
+    display: flex;
+    flex: 1;
+    min-height: 0;
+    gap: var(--spacing);
+    padding: var(--spacing);
+  }
+
+  .html-diff-column {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-width: 0;
+
+    &.previous {
+      color: var(--color-deleted);
+    }
+    &.current {
+      color: var(--color-new);
+    }
+  }
+
+  .html-diff-label {
+    padding-bottom: var(--spacing-half);
+    font-weight: var(--font-weight-semibold);
+  }
+
+  .html-diff-page {
+    flex: 1;
+    width: 100%;
+    min-height: 0;
+    border: 1px solid var(--box-border-color);
+    border-radius: var(--border-radius);
+    // Pages bring their own colours; without them they're white, as in a browser
+    background: #fff;
+
+    &.loading {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: none;
+      color: var(--text-secondary-color);
+    }
+  }
+
+  // Outline the old and new versions in the deleted/added colours
+  .html-diff-pages.modified .html-diff-page:not(.loading) {
+    border-color: currentColor;
+  }
+}

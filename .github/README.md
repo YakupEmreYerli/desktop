@@ -29,6 +29,7 @@ This is not an official GitHub product. For the official app see
 | Feature | Details |
 |---|---|
 | **PDF previews in diffs** | Added and deleted PDFs show their pages; modified PDFs show old and new pages side by side, with page navigation. Long documents are drawn page by page as you scroll. Works in the changes and history views. |
+| **HTML previews in diffs** | HTML files open as rendered pages, old and new side by side when modified, with a Preview/Code switch. Local stylesheets, images and scripts load; scripts run sandboxed. |
 | **Tidier changes filter** | Filter options have count badges and full-width rows, and the popover stays open while you pick several filters. |
 | **Per-user Linux install** | One script builds and installs the app into your home directory, no sudo, keeping existing GitHub Desktop settings and sign-in. |
 
@@ -77,6 +78,9 @@ app/src/lib/pdf.ts                    PDF detection
 app/src/ui/diff/pdf-diffs/            PDF diff viewer (pdf.js)
 app/webpack.pdfjs.ts                  ships pdf.js runtime files
 app/styles/ui/_pdf-diff.scss          PDF viewer styles
+app/src/lib/html.ts                   HTML detection, asset inlining
+app/src/ui/diff/html-diffs/           HTML preview
+app/styles/ui/_html-diff.scss         HTML preview styles
 app/styles/ui/changes/_filter-popover.scss
 script/linux-kur.sh                   Linux installer
 .github/workflows/fork-ci.yml         fork CI

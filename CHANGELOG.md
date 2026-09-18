@@ -11,6 +11,10 @@ notes are in `changelog.json` and on
 - PDF previews in diffs: pages of added and deleted PDFs, old and new side by
   side for modified PDFs, with page navigation. Works in the changes and
   history views; long documents are drawn page by page as you scroll.
+- HTML previews in diffs: HTML files open as rendered pages, old and new side
+  by side for modified files, with a switch back to the code diff (the choice
+  is remembered). Local stylesheets, scripts, images and fonts are loaded;
+  scripts run sandboxed.
 - `script/linux-kur.sh` builds and installs the fork for the current user on
   Linux, keeping existing GitHub Desktop settings and sign-in.
 - Linux CI for the fork (lint, unit tests, production build).
