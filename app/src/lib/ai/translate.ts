@@ -1,6 +1,5 @@
 import { createHash } from 'crypto'
 import * as Path from 'path'
-import { DiffHunk, DiffLineType } from '../../models/diff'
 import { AIProviderError, completeWithAI } from './providers'
 
 /** Whether the given path is a text document that can be translated */
@@ -125,12 +124,8 @@ export interface IDocumentBlock {
   /** Fenced code is shown as is, never translated */
   readonly isCode: boolean
   /** 1-based line numbers of the block's first and last line */
-  readonly startLine: number
-  readonly endLine: number
-  /** Whether lines in this block were added or changed */
-  readonly changed: boolean
-  /** How many lines were removed right after this block */
-  readonly removedAfter: number
+  readonly start: number
+  readonly end: number
 }
 
 const FencePattern = /^\s{0,3}(```|~~~)/
@@ -195,85 +190,6 @@ export function splitIntoBlocks(lines: ReadonlyArray<string>): ReadonlyArray<{
   })
 
   flush(lines.length, fence !== null)
-  return blocks
-}
-
-/**
- * Split a document into blocks and mark the ones the diff changed.
- *
- * @param lines     The document to show, one entry per line.
- * @param hunks     The diff's hunks, or null to mark nothing (new or deleted
- *                  files, where everything changed).
- */
-export function getDocumentBlocks(
-  lines: ReadonlyArray<string>,
-  hunks: ReadonlyArray<DiffHunk> | null
-): ReadonlyArray<IDocumentBlock> {
-  const added = new Set<number>()
-  /** Removed line counts, keyed by the new line they follow (0 = top) */
-  const removed = new Map<number, number>()
-
-  for (const hunk of hunks ?? []) {
-    let lastNewLine = hunk.header.newStartLine - 1
-    for (const line of hunk.lines) {
-      if (line.type === DiffLineType.Add && line.newLineNumber !== null) {
-        added.add(line.newLineNumber)
-      } else if (line.type === DiffLineType.Delete) {
-        removed.set(lastNewLine, (removed.get(lastNewLine) ?? 0) + 1)
-      }
-      if (line.newLineNumber !== null) {
-        lastNewLine = line.newLineNumber
-      }
-    }
-  }
-
-  const raw = splitIntoBlocks(lines)
-  const removedAfter = new Array<number>(raw.length).fill(0)
-  let removedAtTop = 0
-
-  for (const [afterLine, count] of removed) {
-    // The last block that starts at or before the removal point
-    let index = -1
-    for (let i = 0; i < raw.length && raw[i].start <= afterLine; i++) {
-      index = i
-    }
-    if (index === -1) {
-      removedAtTop += count
-    } else {
-      removedAfter[index] += count
-    }
-  }
-
-  const blocks = raw.map((block, i) => {
-    let changed = false
-    for (let line = block.start; line <= block.end && !changed; line++) {
-      changed = added.has(line)
-    }
-    return {
-      source: block.source,
-      isCode: block.isCode,
-      startLine: block.start,
-      endLine: block.end,
-      changed,
-      removedAfter: removedAfter[i],
-    }
-  })
-
-  if (removedAtTop > 0) {
-    // Lines removed before the first block: attach them to an empty block
-    return [
-      {
-        source: '',
-        isCode: false,
-        startLine: 0,
-        endLine: 0,
-        changed: false,
-        removedAfter: removedAtTop,
-      },
-      ...blocks,
-    ]
-  }
-
   return blocks
 }
 
@@ -350,7 +266,7 @@ You receive a JSON object {"blocks": [...]} where every string is one block of a
 Rules:
 - Keep Markdown syntax (headings, lists, emphasis, tables, links) as it is; translate only the human language.
 - Never translate or change URLs, inline code, file names, paths, commands, environment variables, identifiers, API names or product names.
-- Keep the line breaks inside a block.
+- Every block comes back with exactly as many lines as it has in the source. Spread the translation over the lines in reading order, so line N of the translation covers roughly what line N of the source says.
 - Write natural, fluent Turkish that a developer would write; keep established English technical terms where Turkish developers use them.
 - A block that is already Turkish or has nothing to translate comes back unchanged.
 - Reply with the JSON object only, no commentary and no code fences.`
@@ -424,6 +340,50 @@ async function translateBatch(
 }
 
 /**
+ * Make a translation exactly `count` lines long: extra lines are joined onto
+ * the last one, missing lines are left empty.
+ */
+export function fitToLineCount(
+  translation: string,
+  count: number
+): ReadonlyArray<string> {
+  const lines = translation.split(/\r?\n/)
+  if (lines.length > count) {
+    const kept = lines.slice(0, count - 1)
+    kept.push(lines.slice(count - 1).join(' '))
+    return kept
+  }
+  while (lines.length < count) {
+    lines.push('')
+  }
+  return lines
+}
+
+/**
+ * The document with every block whose translation is cached replaced by it,
+ * line for line. Blank lines, code and blocks not translated yet stay as
+ * they are.
+ */
+export function translateLines(
+  lines: ReadonlyArray<string>
+): ReadonlyArray<string> {
+  const result = [...lines]
+  for (const block of splitIntoBlocks(lines)) {
+    const translation = block.isCode
+      ? undefined
+      : getCachedTranslation(block.source)
+    if (translation === undefined) {
+      continue
+    }
+    const count = block.end - block.start + 1
+    fitToLineCount(translation, count).forEach((line, i) => {
+      result[block.start - 1 + i] = line
+    })
+  }
+  return result
+}
+
+/**
  * Translate the text blocks that aren't cached yet. Each finished request
  * fills the cache and calls `onProgress` with the number of finished and
  * total requests.
@@ -431,7 +391,7 @@ async function translateBatch(
  * @param force  Translate every block again, ignoring the cache.
  */
 export async function translateBlocks(
-  blocks: ReadonlyArray<IDocumentBlock>,
+  blocks: ReadonlyArray<Pick<IDocumentBlock, 'source' | 'isCode'>>,
   options: {
     readonly force?: boolean
     readonly signal?: AbortSignal

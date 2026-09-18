@@ -1,12 +1,15 @@
 import * as React from 'react'
-import classNames from 'classnames'
-import { marked } from 'marked'
-import DOMPurify from 'dompurify'
 
 import { AppFileStatusKind } from '../../../models/status'
-import { DiffHunk } from '../../../models/diff'
+import {
+  DiffHunk,
+  DiffLine,
+  DiffLineType,
+  DiffType,
+  ILargeTextDiff,
+  ITextDiff,
+} from '../../../models/diff'
 import { getBoolean, setBoolean } from '../../../lib/local-storage'
-import { shell } from '../../../lib/app-shell'
 import {
   AIProviders,
   getProviderModel,
@@ -15,11 +18,10 @@ import {
   onAISettingsChanged,
 } from '../../../lib/ai/providers'
 import {
-  getCachedTranslation,
-  getDocumentBlocks,
-  IDocumentBlock,
   isMostlyTurkish,
+  splitIntoBlocks,
   translateBlocks,
+  translateLines,
 } from '../../../lib/ai/translate'
 import { openAISettings } from '../../../lib/ai/settings-link'
 import { Button } from '../../lib/button'
@@ -43,11 +45,17 @@ interface ITranslationDiffProps {
   /** The old and new contents of the file */
   readonly fileContents: IFileContents
 
-  /** The diff's hunks, used to mark changed paragraphs */
-  readonly hunks: ReadonlyArray<DiffHunk>
+  /** The file's diff */
+  readonly diff: ITextDiff | ILargeTextDiff
 
   /** The regular text diff, shown in the code view */
   readonly code: JSX.Element
+
+  /** Renders a diff the same way as the code view, without discarding */
+  readonly renderDiff: (
+    diff: ITextDiff,
+    fileContents: IFileContents
+  ) => JSX.Element
 }
 
 type TranslationStatus =
@@ -64,13 +72,21 @@ type TranslationStatus =
 interface ITranslationDiffState {
   readonly showTranslation: boolean
   readonly status: TranslationStatus
-  /** Bumped when the cache fills so blocks re-render with their translation */
+  /** Bumped when the cache fills so the diff is rebuilt with translations */
   readonly revision: number
 }
 
+interface ITranslatedDiff {
+  readonly revision: number
+  readonly diff: ITextDiff | ILargeTextDiff
+  readonly fileContents: IFileContents
+  readonly translatedDiff: ITextDiff
+  readonly translatedContents: IFileContents
+}
+
 /**
- * Shows a text document either as its diff or translated into Turkish, with
- * the paragraphs the change touched highlighted.
+ * Shows a text document's diff either as is or with its text translated into
+ * Turkish, line for line, in the same diff view.
  */
 export class TranslationDiff extends React.Component<
   ITranslationDiffProps,
@@ -78,12 +94,14 @@ export class TranslationDiff extends React.Component<
 > {
   private abortController: AbortController | null = null
   private unsubscribeSettings: (() => void) | null = null
-  private documentElement: HTMLDivElement | null = null
+
   /** Documents already in Turkish are shown as plain code, no switch */
   private isTurkishCache: {
     readonly contents: IFileContents
     readonly value: boolean
   } | null = null
+
+  private translated: ITranslatedDiff | null = null
 
   public constructor(props: ITranslationDiffProps) {
     super(props)
@@ -97,17 +115,6 @@ export class TranslationDiff extends React.Component<
   public componentDidMount() {
     this.unsubscribeSettings = onAISettingsChanged(this.onSettingsChanged)
     if (this.state.showTranslation) {
-      this.translate()
-    }
-  }
-
-  /** A provider set up (or changed) while this view waits: try again */
-  private onSettingsChanged = () => {
-    const { showTranslation, status } = this.state
-    if (
-      showTranslation &&
-      (status.kind === 'not-configured' || status.kind === 'error')
-    ) {
       this.translate()
     }
   }
@@ -128,27 +135,30 @@ export class TranslationDiff extends React.Component<
     this.abortController?.abort()
   }
 
-  private get isDeleted() {
-    return (
-      this.props.fileContents.file.status.kind === AppFileStatusKind.Deleted
-    )
+  /** A provider set up (or changed) while this view waits: try again */
+  private onSettingsChanged = () => {
+    const { showTranslation, status } = this.state
+    if (
+      showTranslation &&
+      (status.kind === 'not-configured' || status.kind === 'error')
+    ) {
+      this.translate()
+    }
   }
 
-  private get isModified() {
-    const { kind } = this.props.fileContents.file.status
-    return (
-      kind !== AppFileStatusKind.New &&
-      kind !== AppFileStatusKind.Untracked &&
-      kind !== AppFileStatusKind.Deleted
-    )
-  }
-
-  private getBlocks(): ReadonlyArray<IDocumentBlock> {
-    const { oldContents, newContents } = this.props.fileContents
-    return getDocumentBlocks(
-      this.isDeleted ? oldContents : newContents,
-      this.isModified ? this.props.hunks : null
-    )
+  private get isAlreadyTurkish() {
+    const { fileContents } = this.props
+    if (this.isTurkishCache?.contents !== fileContents) {
+      const deleted =
+        fileContents.file.status.kind === AppFileStatusKind.Deleted
+      this.isTurkishCache = {
+        contents: fileContents,
+        value: isMostlyTurkish(
+          deleted ? fileContents.oldContents : fileContents.newContents
+        ),
+      }
+    }
+    return this.isTurkishCache.value
   }
 
   private async translate(force = false) {
@@ -166,8 +176,14 @@ export class TranslationDiff extends React.Component<
       return
     }
 
+    const { oldContents, newContents } = this.props.fileContents
+    const blocks = [
+      ...splitIntoBlocks(oldContents),
+      ...splitIntoBlocks(newContents),
+    ]
+
     try {
-      await translateBlocks(this.getBlocks(), {
+      await translateBlocks(blocks, {
         force,
         signal: controller.signal,
         onProgress: (done, total) => {
@@ -191,7 +207,7 @@ export class TranslationDiff extends React.Component<
         return
       }
       log.error('Unable to translate document', e)
-      this.setState({
+      this.setState(state => ({
         status: {
           kind: 'error',
           message:
@@ -199,8 +215,62 @@ export class TranslationDiff extends React.Component<
               ? e.message
               : 'The translation failed.',
         },
-      })
+        revision: state.revision + 1,
+      }))
     }
+  }
+
+  /**
+   * The diff and file contents with every line whose block has been
+   * translated replaced by its translation. Rebuilt only when the diff or
+   * the cache changed.
+   */
+  private getTranslatedDiff(): ITranslatedDiff {
+    const { diff, fileContents } = this.props
+    const { revision } = this.state
+    const cached = this.translated
+    if (
+      cached !== null &&
+      cached.revision === revision &&
+      cached.diff === diff &&
+      cached.fileContents === fileContents
+    ) {
+      return cached
+    }
+
+    const oldLines = translateLines(fileContents.oldContents)
+    const newLines = translateLines(fileContents.newContents)
+
+    const hunks = diff.hunks.map(
+      hunk =>
+        new DiffHunk(
+          hunk.header,
+          hunk.lines.map(line => translateLine(line, oldLines, newLines)),
+          hunk.unifiedDiffStart,
+          hunk.unifiedDiffEnd,
+          hunk.expansionType
+        )
+    )
+
+    this.translated = {
+      revision,
+      diff,
+      fileContents,
+      translatedDiff: {
+        kind: DiffType.Text,
+        text: diff.text,
+        hunks,
+        lineEndingsChange: diff.lineEndingsChange,
+        maxLineNumber: diff.maxLineNumber,
+        hasHiddenBidiChars: diff.hasHiddenBidiChars,
+      },
+      translatedContents: {
+        ...fileContents,
+        oldContents: oldLines,
+        newContents: newLines,
+      },
+    }
+    return this.translated
   }
 
   private onSelectView = (view: DocumentView) => {
@@ -214,20 +284,6 @@ export class TranslationDiff extends React.Component<
 
   private onRetranslate = () => this.translate(true)
   private onRetry = () => this.translate()
-
-  private get isAlreadyTurkish() {
-    const { fileContents } = this.props
-    if (this.isTurkishCache?.contents !== fileContents) {
-      const lines = this.isDeleted
-        ? fileContents.oldContents
-        : fileContents.newContents
-      this.isTurkishCache = {
-        contents: fileContents,
-        value: isMostlyTurkish(lines),
-      }
-    }
-    return this.isTurkishCache.value
-  }
 
   public render() {
     if (this.isAlreadyTurkish) {
@@ -307,8 +363,10 @@ export class TranslationDiff extends React.Component<
       )
     }
 
+    const { translatedDiff, translatedContents } = this.getTranslatedDiff()
+
     return (
-      <div className="translation-diff-document" ref={this.onDocumentRef}>
+      <>
         {status.kind === 'error' && (
           <div className="translation-diff-error" role="alert">
             <Octicon symbol={OcticonSymbol.alert} />
@@ -317,70 +375,38 @@ export class TranslationDiff extends React.Component<
             <Button onClick={openAISettings}>AI settings</Button>
           </div>
         )}
-        <article className="translation-diff-article">
-          {this.getBlocks().map((block, index) =>
-            this.renderBlock(block, index)
-          )}
-        </article>
-      </div>
+        {this.props.renderDiff(translatedDiff, translatedContents)}
+      </>
     )
-  }
-
-  private renderBlock(block: IDocumentBlock, index: number) {
-    const translated = block.isCode
-      ? block.source
-      : getCachedTranslation(block.source)
-    const pending = translated === undefined
-    const text = translated ?? block.source
-
-    return (
-      <React.Fragment key={`${index}:${block.startLine}`}>
-        {text.trim() !== '' && (
-          <div
-            className={classNames('translation-block', {
-              changed: block.changed,
-              pending,
-            })}
-            // Markdown from the repository and from the model, sanitized
-            dangerouslySetInnerHTML={{ __html: renderMarkdown(text) }}
-          />
-        )}
-        {block.removedAfter > 0 && (
-          <div className="translation-removed">
-            <Octicon symbol={OcticonSymbol.dash} />
-            {block.removedAfter === 1
-              ? '1 line removed'
-              : `${block.removedAfter} lines removed`}
-          </div>
-        )}
-      </React.Fragment>
-    )
-  }
-
-  private onDocumentRef = (element: HTMLDivElement | null) => {
-    this.documentElement?.removeEventListener('click', this.onDocumentClick)
-    this.documentElement = element
-    element?.addEventListener('click', this.onDocumentClick)
-  }
-
-  /** Links open in the browser instead of navigating the app */
-  private onDocumentClick = (event: MouseEvent) => {
-    const target = event.target
-    if (!(target instanceof Element)) {
-      return
-    }
-    const anchor = target.closest('a')
-    if (anchor === null) {
-      return
-    }
-    event.preventDefault()
-    const href = anchor.getAttribute('href') ?? ''
-    if (/^https?:\/\//i.test(href)) {
-      shell.openExternal(href)
-    }
   }
 }
 
-function renderMarkdown(text: string) {
-  return DOMPurify.sanitize(marked(text, { gfm: true, breaks: false }))
+/** A diff line with its text replaced by the translated line, if any */
+function translateLine(
+  line: DiffLine,
+  oldLines: ReadonlyArray<string>,
+  newLines: ReadonlyArray<string>
+) {
+  let translated: string | undefined
+  if (line.type === DiffLineType.Delete && line.oldLineNumber !== null) {
+    translated = oldLines[line.oldLineNumber - 1]
+  } else if (
+    (line.type === DiffLineType.Add || line.type === DiffLineType.Context) &&
+    line.newLineNumber !== null
+  ) {
+    translated = newLines[line.newLineNumber - 1]
+  }
+
+  if (translated === undefined || translated === line.content) {
+    return line
+  }
+
+  return new DiffLine(
+    line.text.charAt(0) + translated,
+    line.type,
+    line.originalLineNumber,
+    line.oldLineNumber,
+    line.newLineNumber,
+    line.noTrailingNewLine
+  )
 }

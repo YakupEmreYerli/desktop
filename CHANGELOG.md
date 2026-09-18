@@ -16,8 +16,8 @@ notes are in `changelog.json` and on
   is remembered). Local stylesheets, scripts, images and fonts are loaded;
   scripts run sandboxed.
 - Turkish translation of text documents in diffs: a Code / Türkçe switch on
-  `.md`, `.txt` and `.rst` files shows the file translated, with changed
-  paragraphs highlighted. Uses DeepSeek, OpenRouter or the local Claude CLI,
+  `.md`, `.txt` and `.rst` files shows the same diff with its text translated
+  line for line. Documents already in Turkish get no switch. Uses DeepSeek, OpenRouter or the local Claude CLI,
   set up in the new Options → AI tab.
 - `script/linux-kur.sh` builds and installs the fork for the current user on
   Linux, keeping existing GitHub Desktop settings and sign-in.

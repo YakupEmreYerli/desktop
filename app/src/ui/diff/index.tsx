@@ -304,8 +304,9 @@ export class Diff extends React.Component<IDiffProps, IDiffState> {
       return (
         <TranslationDiff
           fileContents={fileContents}
-          hunks={diff.hunks}
+          diff={diff}
           code={code}
+          renderDiff={this.renderTranslatedTextDiff}
         />
       )
     }
@@ -346,6 +347,28 @@ export class Diff extends React.Component<IDiffProps, IDiffState> {
         askForConfirmationOnDiscardChanges={
           this.props.askForConfirmationOnDiscardChanges
         }
+        onHideWhitespaceInDiffChanged={this.props.onHideWhitespaceInDiffChanged}
+        showDiffCheckMarks={this.props.showDiffCheckMarks}
+      />
+    )
+  }
+
+  /**
+   * A translated diff, drawn like the code view. Discarding is left out: it
+   * would write the translated text into the file.
+   */
+  private renderTranslatedTextDiff = (
+    diff: ITextDiff,
+    fileContents: IFileContents
+  ) => {
+    return (
+      <SideBySideDiff
+        file={this.props.file}
+        diff={diff}
+        fileContents={fileContents}
+        hideWhitespaceInDiff={this.props.hideWhitespaceInDiff}
+        showSideBySideDiff={this.props.showSideBySideDiff}
+        onIncludeChanged={this.props.onIncludeChanged}
         onHideWhitespaceInDiffChanged={this.props.onHideWhitespaceInDiffChanged}
         showDiffCheckMarks={this.props.showDiffCheckMarks}
       />

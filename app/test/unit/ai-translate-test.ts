@@ -2,38 +2,12 @@ import { describe, it } from 'node:test'
 import assert from 'node:assert'
 
 import {
-  DiffHunk,
-  DiffHunkExpansionType,
-  DiffHunkHeader,
-  DiffLine,
-  DiffLineType,
-} from '../../src/models/diff'
-import {
-  getDocumentBlocks,
+  fitToLineCount,
   isMostlyTurkish,
   isTranslatableDocument,
   parseTranslationReply,
   splitIntoBlocks,
 } from '../../src/lib/ai/translate'
-
-/**
- * A hunk from `[type, oldLine, newLine]` triples; context lines have both
- * numbers, additions only the new one, deletions only the old one.
- */
-function hunk(
-  newStart: number,
-  lines: ReadonlyArray<[DiffLineType, number | null, number | null]>
-) {
-  return new DiffHunk(
-    new DiffHunkHeader(newStart, 0, newStart, 0),
-    lines.map(([type, oldLine, newLine], i) => {
-      return new DiffLine('', type, i, oldLine, newLine)
-    }),
-    0,
-    0,
-    DiffHunkExpansionType.None
-  )
-}
 
 describe('isTranslatableDocument', () => {
   it('accepts text documents only', () => {
@@ -75,57 +49,17 @@ describe('splitIntoBlocks', () => {
   })
 })
 
-describe('getDocumentBlocks', () => {
-  const lines = ['# Title', '', 'Intro', '', 'Changed', 'text', '', 'End']
-
-  it('marks blocks that contain added lines', () => {
-    const blocks = getDocumentBlocks(lines, [
-      hunk(4, [
-        [DiffLineType.Context, 4, 4],
-        [DiffLineType.Delete, 5, null],
-        [DiffLineType.Add, null, 5],
-        [DiffLineType.Context, 6, 6],
-      ]),
-    ])
-
-    assert.deepStrictEqual(
-      blocks.map(b => b.changed),
-      [false, false, true, false]
-    )
+describe('fitToLineCount', () => {
+  it('keeps a translation with the right number of lines', () => {
+    assert.deepStrictEqual(fitToLineCount('bir\niki', 2), ['bir', 'iki'])
   })
 
-  it('counts removed lines after the block they followed', () => {
-    const blocks = getDocumentBlocks(lines, [
-      hunk(3, [
-        [DiffLineType.Context, 3, 3],
-        [DiffLineType.Delete, 4, null],
-        [DiffLineType.Delete, 5, null],
-        [DiffLineType.Context, 6, 4],
-      ]),
-    ])
-
-    assert.deepStrictEqual(
-      blocks.map(b => b.removedAfter),
-      [0, 2, 0, 0]
-    )
+  it('joins extra lines onto the last one', () => {
+    assert.deepStrictEqual(fitToLineCount('bir\niki\nüç', 2), ['bir', 'iki üç'])
   })
 
-  it('keeps removals at the top of the file', () => {
-    const blocks = getDocumentBlocks(lines, [
-      hunk(1, [
-        [DiffLineType.Delete, 1, null],
-        [DiffLineType.Context, 2, 1],
-      ]),
-    ])
-
-    assert.equal(blocks[0].source, '')
-    assert.equal(blocks[0].removedAfter, 1)
-    assert.equal(blocks.length, 5)
-  })
-
-  it('marks nothing without hunks', () => {
-    const blocks = getDocumentBlocks(lines, null)
-    assert(blocks.every(b => !b.changed && b.removedAfter === 0))
+  it('pads missing lines', () => {
+    assert.deepStrictEqual(fitToLineCount('bir', 3), ['bir', '', ''])
   })
 })
 

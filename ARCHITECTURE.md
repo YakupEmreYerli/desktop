@@ -147,21 +147,26 @@ Documents already in Turkish get no switch: `isMostlyTurkish` weighs
 letters only Turkish uses (ğ, ş, ı, İ) and common Turkish words against common
 English words in the prose, leaving out code, inline code and URLs.
 
-`lib/ai/translate.ts` splits the shown version (the new one, the old one for
-a deleted file) into blocks at blank lines, keeping fenced code whole. For a
-modified file the diff's hunks mark blocks containing added lines as changed
-and count removed lines after the block they followed. Code blocks aren't
-translated. The rest go to the provider as `{"blocks": [...]}` in batches of
-about 8000 characters, three requests at a time; the reply must have the same
-number of blocks. Translations are cached per block (SHA-1 of the source) in
-local storage, up to 3000 entries, so after an edit only the changed
-paragraphs are translated again. "Translate again" ignores the cache.
+The Türkçe view is the same diff view as Code, with the text translated line
+for line: `TranslationDiff` builds a copy of the diff whose lines carry the
+translated text and hands it, with translated file contents for syntax
+highlighting and hunk expansion, to `Diff.renderTranslatedTextDiff`, a
+`SideBySideDiff` without discard (discarding would write the translation into
+the file). Line numbers, colours, split/unified mode and line selection for
+committing behave as in the code view.
 
-`TranslationDiff` renders each block with `marked` and DOMPurify. Blocks
-waiting for their translation show the original in secondary colour; changed
-blocks get the added-line background, and removed lines show as a small
-"N lines removed" marker. Links open in the browser. Without a usable
-provider the view shows a button to Options → AI.
+`lib/ai/translate.ts` splits the old and new versions into blocks at blank
+lines, keeping fenced code whole; code isn't translated. The rest go to the
+provider as `{"blocks": [...]}` in batches of about 8000 characters, three
+requests at a time; the reply must have the same number of blocks, and each
+block the same number of lines (`fitToLineCount` joins extra lines onto the
+last and pads missing ones). Translations are cached per block (SHA-1 of the
+source) in local storage, up to 3000 entries, so unchanged paragraphs shared
+by the old and new version are translated once and after an edit only the
+changed ones go out again. "Translate again" ignores the cache. Lines whose
+block isn't translated yet show the original text. Without a usable provider
+the view shows a button to Options → AI, and it starts by itself once one is
+set up (`onAISettingsChanged`).
 
 Styles: `_translation-diff.scss`, `_ai-preferences.scss`, `_view-switch.scss`.
 Tests: `app/test/unit/ai-translate-test.ts`.
