@@ -224,13 +224,39 @@ const ReferenceAttributes: ReadonlyArray<[string, string]> = [
   ['use[href]', 'href'],
 ]
 
+/** The type of the message a preview frame posts with its content height */
+export const PreviewHeightMessage = 'desktop-html-preview-height'
+
+/**
+ * Posts the document's height to the app whenever it changes, so the frame
+ * can be as tall as the page and the diff view scrolls instead of the frame.
+ * Pages that turn off scrolling (print layouts with `overflow: hidden`) are
+ * shown in full this way too.
+ */
+const HeightReporter = `(() => {
+  const post = () => {
+    const root = document.documentElement
+    const height = Math.max(
+      root.scrollHeight,
+      root.getBoundingClientRect().height,
+      document.body ? document.body.scrollHeight : 0
+    )
+    parent.postMessage({ type: '${PreviewHeightMessage}', height }, '*')
+  }
+  const observer = new ResizeObserver(post)
+  observer.observe(document.documentElement)
+  if (document.body) observer.observe(document.body)
+  addEventListener('load', post)
+})()`
+
 /**
  * Prepare an HTML document for a sandboxed preview frame.
  *
  * A sandboxed frame has an opaque origin and can't load `file://` URLs, so
  * the stylesheets, scripts, images and fonts the document refers to with
  * relative paths are read from disk and inlined. Remote URLs are left as
- * they are.
+ * they are. A small script is added that reports the page's height, see
+ * `HeightReporter`.
  *
  * @param html          The document's source.
  * @param documentPath  Where the document lives on disk; relative references
@@ -353,6 +379,10 @@ export async function buildHtmlPreview(
   const base = document.createElement('base')
   base.setAttribute('target', '_blank')
   document.head.prepend(base)
+
+  const reporter = document.createElement('script')
+  reporter.textContent = HeightReporter
+  document.body.append(reporter)
 
   const doctype = document.doctype ? `<!DOCTYPE ${document.doctype.name}>` : ''
   return doctype + document.documentElement.outerHTML

@@ -1,4 +1,6 @@
 // Rendered previews for HTML files, see app/src/ui/diff/html-diffs.
+// The page area padding and the label height are mirrored in html-diff.tsx,
+// where the minimum frame height is calculated.
 
 .html-diff {
   display: flex;
@@ -13,18 +15,64 @@
     flex-shrink: 0;
     padding: var(--spacing-half) var(--spacing);
     border-bottom: var(--base-border);
+  }
 
-    .tab-bar {
-      margin: 0;
+  // A two-option segmented control
+  .html-diff-switch {
+    display: inline-flex;
+    gap: 2px;
+    padding: 2px;
+    border: 1px solid var(--box-border-color);
+    border-radius: 6px;
+    background: var(--box-alt-background-color);
+  }
+
+  .html-diff-switch-option {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-half);
+    height: 22px;
+    padding: 0 var(--spacing);
+    border: none;
+    border-radius: 4px;
+    background: transparent;
+    box-shadow: none;
+    color: var(--text-secondary-color);
+    font-family: var(--font-family-sans-serif);
+    font-size: var(--font-size-sm);
+    cursor: pointer;
+
+    .octicon {
+      width: 12px;
+      height: 12px;
+    }
+
+    &:hover {
+      color: var(--text-color);
+    }
+
+    &.selected {
+      background: var(--background-color);
+      color: var(--text-color);
+      font-weight: var(--font-weight-semibold);
+      box-shadow: 0 0 0 1px var(--box-border-color);
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--focus-color);
+      outline-offset: 1px;
     }
   }
 
+  // The frames are as tall as their pages; this area scrolls them together
   .html-diff-pages {
     display: flex;
+    align-items: flex-start;
     flex: 1;
     min-height: 0;
-    gap: var(--spacing);
-    padding: var(--spacing);
+    gap: 16px;
+    padding: 16px;
+    overflow: auto;
   }
 
   .html-diff-column {
@@ -42,17 +90,17 @@
   }
 
   .html-diff-label {
-    padding-bottom: var(--spacing-half);
+    display: flex;
+    align-items: center;
+    height: 28px;
     font-weight: var(--font-weight-semibold);
   }
 
   .html-diff-page {
     position: relative;
-    flex: 1;
-    min-height: 0;
     overflow: hidden;
-    border: 1px solid var(--box-border-color);
     border-radius: var(--border-radius);
+    outline: 1px solid var(--box-border-color);
     // Pages bring their own colours; without them they're white, as in a browser
     background: #fff;
 
@@ -69,6 +117,7 @@
       display: flex;
       align-items: center;
       justify-content: center;
+      height: 200px;
       background: none;
       color: var(--text-secondary-color);
     }
@@ -76,6 +125,6 @@
 
   // Outline the old and new versions in the deleted/added colours
   .html-diff-pages.modified .html-diff-page:not(.loading) {
-    border-color: currentColor;
+    outline-color: currentColor;
   }
 }

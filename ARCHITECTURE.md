@@ -74,7 +74,7 @@ and committed PDFs, text-looking PDFs and media types.
 An HTML file stays a text diff (`DiffType.Text`); only the view changes, so
 `lib/git/diff.ts` isn't touched. `Diff.renderText` (and the large text diff path) hands `.html`/`.htm` files
 to `HtmlDiff` (`app/src/ui/diff/html-diffs/`) together with the regular text
-diff element. A Preview/Code switch picks between the rendered pages and that
+diff element. A Preview/Code segmented control picks between the rendered pages and that
 text diff; the choice is kept in local storage (`html-diff-show-code`), and
 Preview is the default.
 
@@ -93,11 +93,17 @@ URLs. Remote URLs load as they are. A `<base target="_blank">` replaces any
 existing `<base>`, so clicking a link opens nothing instead of navigating the
 frame.
 
-**Scaling.** `html-frame.tsx` lays each page out at a 1280 px wide viewport
-and scales the frame down to its column with a CSS transform, so a narrow
-column (two versions side by side) shows the desktop layout shrunk, like a
-PDF page, instead of the page's mobile layout. Columns wider than 1280 px
-use their own width.
+**Scaling and scrolling.** `html-frame.tsx` lays each page out at a 1280 px
+wide viewport and scales the frame down to its column with a CSS transform, so
+a narrow column (two versions side by side) shows the desktop layout shrunk,
+like a PDF page, instead of the page's mobile layout. A script added by
+`buildHtmlPreview` posts the page's height to the app (`postMessage`, checked
+against the frame's window), and the frame is made that tall, at least as tall
+as the visible area. The page area scrolls instead of the frames, so both
+versions scroll together and print layouts that turn scrolling off
+(`overflow: hidden` on a fixed-size page) are shown in full. A frame grows at
+most ten times per document and to 50,000 px, which stops pages sized by the
+viewport (`min-height: 100vh` plus padding) from growing forever.
 
 **Limits.** Assets are read from the working tree even when an older version
 of the page is shown. `PreviewAssetReader` reads only regular files inside the

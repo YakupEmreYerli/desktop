@@ -6,12 +6,17 @@ import { AppFileStatusKind } from '../../../models/status'
 import { getOldPathOrDefault } from '../../../lib/get-old-path'
 import { buildHtmlPreview, PreviewAssetReader } from '../../../lib/html'
 import { getBoolean, setBoolean } from '../../../lib/local-storage'
-import { TabBar, TabBarType } from '../../tab-bar'
+import { Octicon } from '../../octicons'
+import * as OcticonSymbol from '../../octicons/octicons.generated'
 import { IFileContents } from '../syntax-highlighting'
 import { HtmlFrame } from './html-frame'
 
 /** Remembers whether HTML files open in the code view instead of the preview */
 const ShowCodeKey = 'html-diff-show-code'
+
+/** Padding of the page area and height of a column label, see _html-diff.scss */
+const PagesPadding = 16
+const LabelHeight = 28
 
 interface IHtmlDiffProps {
   /** The repository's working directory */
@@ -30,6 +35,9 @@ interface IHtmlDiffState {
   /** The documents ready for the preview frames, null while loading */
   readonly previous: string | null
   readonly current: string | null
+
+  /** The height of the scrollable page area */
+  readonly viewportHeight: number
 }
 
 /**
@@ -40,12 +48,22 @@ export class HtmlDiff extends React.Component<IHtmlDiffProps, IHtmlDiffState> {
   /** Incremented for every load so that stale loads can bail out */
   private generation = 0
 
+  private readonly resizeObserver = new ResizeObserver(entries => {
+    for (const entry of entries) {
+      const viewportHeight = entry.target.clientHeight
+      if (viewportHeight !== this.state.viewportHeight) {
+        this.setState({ viewportHeight })
+      }
+    }
+  })
+
   public constructor(props: IHtmlDiffProps) {
     super(props)
     this.state = {
       showCode: getBoolean(ShowCodeKey, false),
       previous: null,
       current: null,
+      viewportHeight: 0,
     }
   }
 
@@ -68,6 +86,18 @@ export class HtmlDiff extends React.Component<IHtmlDiffProps, IHtmlDiffState> {
 
   public componentWillUnmount() {
     this.generation++
+    this.resizeObserver.disconnect()
+  }
+
+  private onPagesRef = (element: HTMLDivElement | null) => {
+    this.resizeObserver.disconnect()
+    if (element !== null) {
+      this.resizeObserver.observe(element)
+    }
+  }
+
+  private get isModified() {
+    return this.hasPrevious && this.hasCurrent
   }
 
   private get hasPrevious() {
@@ -112,8 +142,10 @@ export class HtmlDiff extends React.Component<IHtmlDiffProps, IHtmlDiffState> {
     }
   }
 
-  private onTabClicked = (index: number) => {
-    const showCode = index === 1
+  private showPreview = () => this.setShowCode(false)
+  private showCode = () => this.setShowCode(true)
+
+  private setShowCode(showCode: boolean) {
     setBoolean(ShowCodeKey, showCode)
     this.setState({ showCode })
   }
@@ -124,27 +156,57 @@ export class HtmlDiff extends React.Component<IHtmlDiffProps, IHtmlDiffState> {
     return (
       <div className="html-diff">
         <div className="html-diff-toolbar">
-          <TabBar
-            selectedIndex={showCode ? 1 : 0}
-            onTabClicked={this.onTabClicked}
-            type={TabBarType.Switch}
+          <div
+            className="html-diff-switch"
+            role="radiogroup"
+            aria-label="Show the file as"
           >
-            <span>Preview</span>
-            <span>Code</span>
-          </TabBar>
+            {this.renderSwitchOption(
+              'Preview',
+              OcticonSymbol.eye,
+              !showCode,
+              this.showPreview
+            )}
+            {this.renderSwitchOption(
+              'Code',
+              OcticonSymbol.code,
+              showCode,
+              this.showCode
+            )}
+          </div>
         </div>
         {showCode ? this.props.code : this.renderPreview()}
       </div>
     )
   }
 
+  private renderSwitchOption(
+    label: string,
+    symbol: OcticonSymbol.OcticonSymbolVariants,
+    selected: boolean,
+    onClick: () => void
+  ) {
+    return (
+      <button
+        type="button"
+        role="radio"
+        aria-checked={selected}
+        className={classNames('html-diff-switch-option', { selected })}
+        onClick={onClick}
+      >
+        <Octicon symbol={symbol} />
+        {label}
+      </button>
+    )
+  }
+
   private renderPreview() {
     const className = classNames('html-diff-pages', {
-      modified: this.hasPrevious && this.hasCurrent,
+      modified: this.isModified,
     })
 
     return (
-      <div className={className}>
+      <div className={className} ref={this.onPagesRef}>
         {this.hasPrevious &&
           this.renderPage('previous', 'Deleted', this.state.previous)}
         {this.hasCurrent &&
@@ -158,17 +220,23 @@ export class HtmlDiff extends React.Component<IHtmlDiffProps, IHtmlDiffState> {
     title: string,
     document: string | null
   ) {
-    const showTitle = this.hasPrevious && this.hasCurrent
+    const minHeight = Math.max(
+      0,
+      this.state.viewportHeight -
+        2 * PagesPadding -
+        (this.isModified ? LabelHeight : 0)
+    )
 
     return (
       <div className={classNames('html-diff-column', side)}>
-        {showTitle && <div className="html-diff-label">{title}</div>}
+        {this.isModified && <div className="html-diff-label">{title}</div>}
         {document === null ? (
           <div className="html-diff-page loading">Loading preview…</div>
         ) : (
           <HtmlFrame
             title={`${title} version of the page`}
             document={document}
+            minHeight={minHeight}
           />
         )}
       </div>
