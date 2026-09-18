@@ -15,6 +15,109 @@ export function isTranslatableDocument(path: string) {
   )
 }
 
+const TurkishWords = new Set([
+  've',
+  'bir',
+  'bu',
+  'için',
+  'ile',
+  'da',
+  'de',
+  'değil',
+  'olarak',
+  'gibi',
+  'daha',
+  'ama',
+  'çok',
+  'ya',
+  'ne',
+  'her',
+  'önce',
+  'sonra',
+  'yalnız',
+  'sadece',
+  'olan',
+  'var',
+  'yok',
+  'kadar',
+  'ise',
+  'veya',
+  'şu',
+  'göre',
+  'nasıl',
+  'neden',
+  'hem',
+  'en',
+  'mı',
+  'mi',
+  'değildir',
+  'eder',
+  'olur',
+])
+
+const EnglishWords = new Set([
+  'the',
+  'and',
+  'is',
+  'of',
+  'to',
+  'in',
+  'for',
+  'with',
+  'that',
+  'this',
+  'are',
+  'be',
+  'on',
+  'not',
+  'you',
+  'it',
+  'as',
+  'or',
+  'by',
+  'from',
+  'can',
+  'if',
+  'an',
+  'when',
+  'will',
+  'your',
+  'have',
+  'has',
+  'was',
+  'which',
+  'use',
+])
+
+/** Letters that only Turkish text uses among the two languages */
+const TurkishLetters = /[ğĞşŞıİ]/g
+
+/**
+ * Whether a document is written mostly in Turkish, so translating it would
+ * be pointless. Code, inline code and URLs are ignored; a guess from common
+ * words and letters that only Turkish uses.
+ */
+export function isMostlyTurkish(lines: ReadonlyArray<string>): boolean {
+  const prose = splitIntoBlocks(lines)
+    .filter(b => !b.isCode)
+    .map(b => b.source)
+    .join('\n')
+    .replace(/`[^`]*`/g, ' ')
+    .replace(/\bhttps?:\/\/\S+/g, ' ')
+
+  let turkish = (prose.match(TurkishLetters) ?? []).length
+  let english = 0
+  for (const word of prose.toLocaleLowerCase('tr').split(/[^\p{L}]+/u)) {
+    if (TurkishWords.has(word)) {
+      turkish += 2
+    } else if (EnglishWords.has(word)) {
+      english += 2
+    }
+  }
+
+  return turkish > 0 && turkish >= english
+}
+
 /** A paragraph-sized piece of a document */
 export interface IDocumentBlock {
   /** The block's source text */

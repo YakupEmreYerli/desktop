@@ -17,6 +17,7 @@ import {
   getCachedTranslation,
   getDocumentBlocks,
   IDocumentBlock,
+  isMostlyTurkish,
   translateBlocks,
 } from '../../../lib/ai/translate'
 import { openAISettings } from '../../../lib/ai/settings-link'
@@ -76,6 +77,11 @@ export class TranslationDiff extends React.Component<
 > {
   private abortController: AbortController | null = null
   private documentElement: HTMLDivElement | null = null
+  /** Documents already in Turkish are shown as plain code, no switch */
+  private isTurkishCache: {
+    readonly contents: IFileContents
+    readonly value: boolean
+  } | null = null
 
   public constructor(props: ITranslationDiffProps) {
     super(props)
@@ -131,6 +137,9 @@ export class TranslationDiff extends React.Component<
   }
 
   private async translate(force = false) {
+    if (this.isAlreadyTurkish) {
+      return
+    }
     this.abortController?.abort()
     const controller = new AbortController()
     this.abortController = controller
@@ -191,7 +200,25 @@ export class TranslationDiff extends React.Component<
   private onRetranslate = () => this.translate(true)
   private onRetry = () => this.translate()
 
+  private get isAlreadyTurkish() {
+    const { fileContents } = this.props
+    if (this.isTurkishCache?.contents !== fileContents) {
+      const lines = this.isDeleted
+        ? fileContents.oldContents
+        : fileContents.newContents
+      this.isTurkishCache = {
+        contents: fileContents,
+        value: isMostlyTurkish(lines),
+      }
+    }
+    return this.isTurkishCache.value
+  }
+
   public render() {
+    if (this.isAlreadyTurkish) {
+      return this.props.code
+    }
+
     const { showTranslation } = this.state
 
     return (

@@ -143,6 +143,10 @@ switch (`ui/diff/view-switch.tsx`, shared with the HTML preview). The view
 choice is remembered (`translation-diff-show-translation`); Code is the
 default so nothing is sent to a provider until asked.
 
+Documents already in Turkish get no switch: `isMostlyTurkish` weighs
+letters only Turkish uses (ğ, ş, ı, İ) and common Turkish words against common
+English words in the prose, leaving out code, inline code and URLs.
+
 `lib/ai/translate.ts` splits the shown version (the new one, the old one for
 a deleted file) into blocks at blank lines, keeping fenced code whole. For a
 modified file the diff's hunks mark blocks containing added lines as changed

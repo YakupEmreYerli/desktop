@@ -10,6 +10,7 @@ import {
 } from '../../src/models/diff'
 import {
   getDocumentBlocks,
+  isMostlyTurkish,
   isTranslatableDocument,
   parseTranslationReply,
   splitIntoBlocks,
@@ -142,5 +143,36 @@ describe('parseTranslationReply', () => {
       /unexpected shape/
     )
     assert.throws(() => parseTranslationReply('not json', 1))
+  })
+})
+
+describe('isMostlyTurkish', () => {
+  it('recognises Turkish documents with English terms and code', () => {
+    assert(
+      isMostlyTurkish([
+        "Yakup'un kendi artifact sistemi. Claude'un `Artifact` aracının yerini tutar.",
+        '',
+        '- **Dil Türkçe.** Değişken, fonksiyon, dosya, commit mesajı, çıktı.',
+        '',
+        '```sh',
+        'echo the quick brown fox and the lazy dog',
+        '```',
+      ])
+    )
+  })
+
+  it('leaves English documents to translate', () => {
+    assert(
+      !isMostlyTurkish([
+        '# Security',
+        '',
+        'Please do not open a public issue for a security problem. Use the',
+        'private vulnerability reporting on this repository instead.',
+      ])
+    )
+  })
+
+  it('treats a document without words as not Turkish', () => {
+    assert(!isMostlyTurkish(['```', 'x = 1', '```']))
   })
 })
