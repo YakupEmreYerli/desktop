@@ -38,6 +38,7 @@ import { enableImagePreviewsForDDSFiles } from '../feature-flag'
 import { unstageAll } from './reset'
 import { stageFiles } from './update-index'
 import { isAbsolute } from 'path'
+import { isPdfExtension, isPdfPath, PdfMediaType } from '../pdf'
 
 /**
  * V8 has a limit on the size of string it can create (~256MB), and unless we want to
@@ -745,6 +746,9 @@ function getMediaType(extension: string) {
   if (extension === '.dds') {
     return 'image/vnd-ms.dds'
   }
+  if (isPdfExtension(extension)) {
+    return PdfMediaType
+  }
 
   // fallback value as per the spec
   return 'text/plain'
@@ -858,6 +862,11 @@ async function buildDiff(
       file,
       file.status.submoduleStatus
     )
+  }
+
+  // PDFs are previewed page by page, even when Git considers them text
+  if (isPdfPath(file.path)) {
+    return getImageDiff(repository, file, newestCommitish, oldestCommitish)
   }
 
   if (!isValidBuffer(buffer)) {

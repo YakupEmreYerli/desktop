@@ -3,6 +3,7 @@ import HtmlWebpackPlugin from 'html-webpack-plugin'
 import webpack from 'webpack'
 import merge from 'webpack-merge'
 import { getReplacements } from './app-info'
+import { PdfjsRuntimePlugin } from './webpack.pdfjs'
 
 export const externals = ['7zip']
 
@@ -84,6 +85,7 @@ export const renderer = merge({}, commonConfig, {
       template: path.join(__dirname, 'static', 'index.html'),
       chunks: ['renderer'],
     }),
+    new PdfjsRuntimePlugin(),
     new webpack.NormalModuleReplacementPlugin(/^vscode-jsonrpc$/, resource => {
       resource.request = 'vscode-jsonrpc/lib/node/main.js'
     }),

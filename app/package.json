@@ -50,6 +50,7 @@
     "minimist": "^1.2.8",
     "p-limit": "^2.2.0",
     "p-memoize": "^7.1.1",
+    "pdfjs-dist": "^6.3.289",
     "primer-support": "^4.0.0",
     "prop-types": "^15.7.2",
     "quick-lru": "^3.0.0",

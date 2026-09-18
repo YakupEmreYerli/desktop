@@ -27,6 +27,8 @@ import {
   ModifiedImageDiff,
   DeletedImageDiff,
 } from './image-diffs'
+import { PdfDiff } from './pdf-diffs'
+import { PdfMediaType } from '../../lib/pdf'
 import { BinaryFile } from './binary-file'
 import { SideBySideDiff } from './side-by-side-diff'
 import { IFileContents } from './syntax-highlighting'
@@ -146,6 +148,11 @@ export class Diff extends React.Component<IDiffProps, IDiffState> {
   }
 
   private renderImage(imageDiff: IImageDiff) {
+    const { previous, current } = imageDiff
+    if ((current ?? previous)?.mediaType === PdfMediaType) {
+      return <PdfDiff previous={previous} current={current} />
+    }
+
     if (imageDiff.current && imageDiff.previous) {
       return (
         <ModifiedImageDiff
