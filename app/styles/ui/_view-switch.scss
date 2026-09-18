@@ -1,0 +1,48 @@
+// Segmented control that switches how a file is shown, see
+// app/src/ui/diff/view-switch.tsx.
+
+.view-switch {
+  display: inline-flex;
+  gap: 2px;
+  padding: 2px;
+  border: 1px solid var(--box-border-color);
+  border-radius: 6px;
+  background: var(--box-alt-background-color);
+}
+
+.view-switch-option {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-half);
+  height: 22px;
+  padding: 0 var(--spacing);
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  box-shadow: none;
+  color: var(--text-secondary-color);
+  font-family: var(--font-family-sans-serif);
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+
+  .octicon {
+    width: 12px;
+    height: 12px;
+  }
+
+  &:hover {
+    color: var(--text-color);
+  }
+
+  &.selected {
+    background: var(--background-color);
+    color: var(--text-color);
+    font-weight: var(--font-weight-semibold);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12), 0 0 0 1px var(--box-border-color);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--focus-color);
+    outline-offset: 1px;
+  }
+}

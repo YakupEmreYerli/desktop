@@ -6,13 +6,20 @@ import { AppFileStatusKind } from '../../../models/status'
 import { getOldPathOrDefault } from '../../../lib/get-old-path'
 import { buildHtmlPreview, PreviewAssetReader } from '../../../lib/html'
 import { getBoolean, setBoolean } from '../../../lib/local-storage'
-import { Octicon } from '../../octicons'
 import * as OcticonSymbol from '../../octicons/octicons.generated'
+import { IViewSwitchOption, ViewSwitch } from '../view-switch'
 import { IFileContents } from '../syntax-highlighting'
 import { HtmlFrame } from './html-frame'
 
 /** Remembers whether HTML files open in the code view instead of the preview */
 const ShowCodeKey = 'html-diff-show-code'
+
+type HtmlView = 'preview' | 'code'
+
+const ViewOptions: ReadonlyArray<IViewSwitchOption<HtmlView>> = [
+  { value: 'preview', label: 'Preview', icon: OcticonSymbol.eye },
+  { value: 'code', label: 'Code', icon: OcticonSymbol.code },
+]
 
 /** Padding of the page area and height of a column label, see _html-diff.scss */
 const PagesPadding = 16
@@ -142,10 +149,8 @@ export class HtmlDiff extends React.Component<IHtmlDiffProps, IHtmlDiffState> {
     }
   }
 
-  private showPreview = () => this.setShowCode(false)
-  private showCode = () => this.setShowCode(true)
-
-  private setShowCode(showCode: boolean) {
+  private onSelectView = (view: HtmlView) => {
+    const showCode = view === 'code'
     setBoolean(ShowCodeKey, showCode)
     this.setState({ showCode })
   }
@@ -156,47 +161,15 @@ export class HtmlDiff extends React.Component<IHtmlDiffProps, IHtmlDiffState> {
     return (
       <div className="html-diff">
         <div className="html-diff-toolbar">
-          <div
-            className="html-diff-switch"
-            role="radiogroup"
-            aria-label="Show the file as"
-          >
-            {this.renderSwitchOption(
-              'Preview',
-              OcticonSymbol.eye,
-              !showCode,
-              this.showPreview
-            )}
-            {this.renderSwitchOption(
-              'Code',
-              OcticonSymbol.code,
-              showCode,
-              this.showCode
-            )}
-          </div>
+          <ViewSwitch
+            options={ViewOptions}
+            selected={showCode ? 'code' : 'preview'}
+            ariaLabel="Show the file as"
+            onSelect={this.onSelectView}
+          />
         </div>
         {showCode ? this.props.code : this.renderPreview()}
       </div>
-    )
-  }
-
-  private renderSwitchOption(
-    label: string,
-    symbol: OcticonSymbol.OcticonSymbolVariants,
-    selected: boolean,
-    onClick: () => void
-  ) {
-    return (
-      <button
-        type="button"
-        role="radio"
-        aria-checked={selected}
-        className={classNames('html-diff-switch-option', { selected })}
-        onClick={onClick}
-      >
-        <Octicon symbol={symbol} />
-        {label}
-      </button>
     )
   }
 

@@ -28,6 +28,7 @@ import {
   defaultUncommittedChangesStrategy,
 } from '../../models/uncommitted-changes-strategy'
 import { Octicon } from '../octicons'
+import { AIPreferences } from './ai'
 import * as octicons from '../octicons/octicons.generated'
 import {
   isConfigFileLockError,
@@ -426,6 +427,10 @@ export class Preferences extends React.Component<
               <Octicon className="icon" symbol={octicons.accessibility} />
               Accessibility
             </span>
+            <span id={this.getTabId(PreferencesTab.AI)}>
+              <Octicon className="icon" symbol={octicons.sparkle} />
+              AI
+            </span>
           </TabBar>
 
           {this.renderActiveTab()}
@@ -464,6 +469,9 @@ export class Preferences extends React.Component<
         break
       case PreferencesTab.Accessibility:
         suffix = 'accessibility'
+        break
+      case PreferencesTab.AI:
+        suffix = 'ai'
         break
       default:
         return assertNever(tab, `Unknown tab type: ${tab}`)
@@ -753,6 +761,9 @@ export class Preferences extends React.Component<
             onUnderlineLinksChanged={this.onUnderlineLinksChanged}
           />
         )
+        break
+      case PreferencesTab.AI:
+        View = <AIPreferences />
         break
       default:
         return assertNever(index, `Unknown tab index: ${index}`)

@@ -31,6 +31,8 @@ import { PdfDiff } from './pdf-diffs'
 import { PdfMediaType } from '../../lib/pdf'
 import { HtmlDiff } from './html-diffs'
 import { isHtmlPath } from '../../lib/html'
+import { TranslationDiff } from './translation-diffs'
+import { isTranslatableDocument } from '../../lib/ai/translate'
 import { BinaryFile } from './binary-file'
 import { SideBySideDiff } from './side-by-side-diff'
 import { IFileContents } from './syntax-highlighting'
@@ -138,10 +140,11 @@ export class Diff extends React.Component<IDiffProps, IDiffState> {
       case DiffType.Image:
         return this.renderImage(diff)
       case DiffType.LargeText: {
-        return this.renderWithHtmlPreview(
+        return this.renderWithDocumentView(
           this.state.forceShowLargeDiff
             ? this.renderLargeText(diff)
-            : this.renderLargeTextDiff()
+            : this.renderLargeTextDiff(),
+          diff
         )
       }
       case DiffType.Unrenderable:
@@ -271,23 +274,43 @@ export class Diff extends React.Component<IDiffProps, IDiffState> {
       return <div className="panel empty">No content changes found</div>
     }
 
-    return this.renderWithHtmlPreview(this.renderTextDiff(diff))
+    return this.renderWithDocumentView(this.renderTextDiff(diff), diff)
   }
 
-  /** For HTML files, offer a rendered preview next to the given code view */
-  private renderWithHtmlPreview(code: JSX.Element) {
-    const { fileContents } = this.props
-    if (!isHtmlPath(this.props.file.path) || fileContents === null) {
+  /**
+   * Offer another view next to the code view: a rendered preview for HTML
+   * files, a Turkish translation for text documents.
+   */
+  private renderWithDocumentView(
+    code: JSX.Element,
+    diff: ITextDiff | ILargeTextDiff
+  ) {
+    const { fileContents, file } = this.props
+    if (fileContents === null) {
       return code
     }
 
-    return (
-      <HtmlDiff
-        repositoryPath={this.props.repository.path}
-        fileContents={fileContents}
-        code={code}
-      />
-    )
+    if (isHtmlPath(file.path)) {
+      return (
+        <HtmlDiff
+          repositoryPath={this.props.repository.path}
+          fileContents={fileContents}
+          code={code}
+        />
+      )
+    }
+
+    if (isTranslatableDocument(file.path)) {
+      return (
+        <TranslationDiff
+          fileContents={fileContents}
+          hunks={diff.hunks}
+          code={code}
+        />
+      )
+    }
+
+    return code
   }
 
   private renderSubmoduleDiff(diff: ISubmoduleDiff) {

@@ -6,7 +6,7 @@ Rules for every contributor and coding agent working in this repository.
 
 A fork of [desktop/desktop](https://github.com/desktop/desktop) (GitHub
 Desktop) at `YakupEmreYerli/desktop`, used on Linux. It adds features on top of
-upstream (PDF and HTML previews in diffs, a restyled changes filter, a per-user Linux
+upstream (PDF and HTML previews in diffs, Turkish translation of documents, a restyled changes filter, a per-user Linux
 installer) and follows upstream closely.
 
 Code, comments and docs are in English.

@@ -1,0 +1,132 @@
+// Options → AI, see app/src/ui/preferences/ai.tsx.
+
+#preferences .ai-preferences {
+  .ai-provider-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing);
+    margin: var(--spacing-double) 0;
+  }
+
+  .ai-provider-label {
+    display: inline-flex;
+    flex-direction: column;
+    gap: 1px;
+    vertical-align: top;
+  }
+
+  .ai-provider-name {
+    font-weight: var(--font-weight-semibold);
+  }
+
+  .ai-provider-summary {
+    font-size: var(--font-size-sm);
+    color: var(--text-secondary-color);
+  }
+
+  .ai-provider-settings {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-double);
+    padding-top: var(--spacing-double);
+    border-top: var(--base-border);
+  }
+
+  .ai-model-suggestions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-half);
+    margin-top: var(--spacing-half);
+  }
+
+  .ai-model-suggestion {
+    height: 20px;
+    padding: 0 var(--spacing);
+    border: 1px solid var(--box-border-color);
+    border-radius: 999px;
+    background: transparent;
+    box-shadow: none;
+    color: var(--text-secondary-color);
+    font-family: var(--font-family-monospace);
+    font-size: var(--font-size-sm);
+    cursor: pointer;
+
+    &:hover {
+      color: var(--text-color);
+      border-color: var(--text-secondary-color);
+    }
+
+    &.selected {
+      border-color: var(--focus-color);
+      background: var(--box-selected-background-color);
+      color: var(--text-color);
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--focus-color);
+      outline-offset: 1px;
+    }
+  }
+
+  .ai-key-actions,
+  .ai-test {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--spacing);
+  }
+
+  .ai-key-actions {
+    margin-top: var(--spacing);
+  }
+
+  .ai-key-status,
+  .ai-test-result,
+  .ai-preferences-hint {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-half);
+    font-size: var(--font-size-sm);
+    color: var(--text-secondary-color);
+  }
+
+  .ai-preferences-hint {
+    align-items: flex-start;
+    margin: 0;
+    line-height: 1.5;
+
+    .octicon {
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+
+    code {
+      font-family: var(--font-family-monospace);
+      color: var(--text-color);
+    }
+
+    &.warning .octicon {
+      color: var(--color-deleted);
+    }
+  }
+
+  .ok,
+  .ai-test-result.ok {
+    color: var(--color-new);
+  }
+
+  .ai-test-result.ok {
+    font-weight: var(--font-weight-semibold);
+  }
+
+  .ai-test-result.failed {
+    align-items: flex-start;
+    color: var(--color-deleted);
+    line-height: 1.4;
+
+    .octicon {
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+  }
+}

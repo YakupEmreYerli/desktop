@@ -14,9 +14,12 @@ conflicts.
 |---|---|
 | `app/src/lib/git/diff.ts` | `buildDiff` sends `.pdf` paths to `getImageDiff`; `getMediaType` returns `application/pdf` |
 | `app/src/ui/diff/index.tsx` | `renderImage` renders `PdfDiff` when the image is a PDF |
-| `app/src/ui/diff/index.tsx` | `renderText` and the large text case wrap `.html`/`.htm` files in `HtmlDiff` (`renderWithHtmlPreview`) |
+| `app/src/ui/diff/index.tsx` | `renderText` and the large text case go through `renderWithDocumentView`: `HtmlDiff` for `.html`/`.htm`, `TranslationDiff` for text documents |
+| `app/src/models/preferences.ts` | `PreferencesTab.AI` (last, so Copilot's hidden-tab index shift still holds) |
+| `app/src/ui/preferences/preferences.tsx` | AI tab: tab label, `getTabId` case, renders `AIPreferences` |
+| `app/src/ui/index.tsx` | `registerAISettingsOpener(dispatcher)` |
 | `app/webpack.common.ts` | `PdfjsRuntimePlugin` in the renderer config |
-| `app/styles/_ui.scss` | imports `ui/pdf-diff` and `ui/html-diff` |
+| `app/styles/_ui.scss` | imports `ui/pdf-diff`, `ui/html-diff`, `ui/view-switch`, `ui/translation-diff`, `ui/ai-preferences` |
 | `app/styles/ui/_changes.scss` | imports `changes/filter-popover` |
 | `app/src/ui/changes/changes-list-filter-options.tsx` | options rendered through `renderOption`, popover stays open on toggle |
 | `app/package.json`, `app/yarn.lock` | `pdfjs-dist` dependency |
@@ -112,6 +115,52 @@ inline, and then send off, files from elsewhere on the machine.
 
 Styles: `app/styles/ui/_html-diff.scss`. Tests:
 `app/test/unit/html-preview-test.ts`.
+
+## AI providers
+
+`app/src/lib/ai/providers.ts` is the one place fork features call a model.
+Three providers: DeepSeek and OpenRouter over their OpenAI-compatible chat
+completions APIs (`fetch`, JSON mode, DeepSeek's thinking turned off), and
+Claude through the local `claude` CLI (`--print --output-format json`, no
+tools, `--setting-sources ""` so the user's hooks and settings don't run,
+no session saved), which uses the user's Claude subscription. The selected
+provider and per-provider model live in local storage (`ai-provider`,
+`ai-model-<provider>`); API keys are in the OS keychain through `TokenStore`
+(`GitHub Desktop - AI provider`, login = provider). `completeWithAI` runs a
+prompt on the selected provider and throws `AIProviderError` with a message
+meant for the user.
+
+**Settings.** Options → AI (`ui/preferences/ai.tsx`) picks the provider,
+the model (free text plus suggestions) and the key, with a connection test.
+Changes save immediately, unlike upstream tabs that save on OK. Features
+that need a provider call `openAISettings()` (`lib/ai/settings-link.ts`),
+which opens that tab through the dispatcher registered at startup.
+
+## Turkish translation of text documents
+
+`.md`, `.markdown`, `.mdx`, `.txt` and `.rst` files get a Code / Türkçe
+switch (`ui/diff/view-switch.tsx`, shared with the HTML preview). The view
+choice is remembered (`translation-diff-show-translation`); Code is the
+default so nothing is sent to a provider until asked.
+
+`lib/ai/translate.ts` splits the shown version (the new one, the old one for
+a deleted file) into blocks at blank lines, keeping fenced code whole. For a
+modified file the diff's hunks mark blocks containing added lines as changed
+and count removed lines after the block they followed. Code blocks aren't
+translated. The rest go to the provider as `{"blocks": [...]}` in batches of
+about 8000 characters, three requests at a time; the reply must have the same
+number of blocks. Translations are cached per block (SHA-1 of the source) in
+local storage, up to 3000 entries, so after an edit only the changed
+paragraphs are translated again. "Translate again" ignores the cache.
+
+`TranslationDiff` renders each block with `marked` and DOMPurify. Blocks
+waiting for their translation show the original in secondary colour; changed
+blocks get the added-line background, and removed lines show as a small
+"N lines removed" marker. Links open in the browser. Without a usable
+provider the view shows a button to Options → AI.
+
+Styles: `_translation-diff.scss`, `_ai-preferences.scss`, `_view-switch.scss`.
+Tests: `app/test/unit/ai-translate-test.ts`.
 
 ## Changes filter popover
 

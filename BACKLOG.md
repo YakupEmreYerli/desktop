@@ -11,13 +11,14 @@ Upstream already generates commit messages with Copilot:
 `app/src/lib/copilot/byok.ts`. Goal: the same button generates a title and a
 description with **Claude**.
 
-- No API key: call the locally installed `claude -p` command, pass the diff
-  on stdin, get JSON `{title, description}` back and reuse the existing
-  parser.
+- Use `completeWithAI` from `app/src/lib/ai/providers.ts` (DeepSeek,
+  OpenRouter or the local `claude` CLI, set up in Options → AI): pass the
+  diff, get JSON `{title, description}` back and reuse the existing parser.
+- Not set up yet: the button opens Options → AI (`openAISettings()`).
 - Message language is a setting, Turkish by default.
-- If `claude` isn't installed, the button shows a clear error.
 - No other AI feature (explanations, conflicts, side panel) starts before this
-  is done.
+  is done. Document translation came first at the maintainer's request and
+  laid down the provider layer this item uses.
 
 ## 2. PDF preview follow-ups
 

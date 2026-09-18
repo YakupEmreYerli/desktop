@@ -1,5 +1,6 @@
 import '../lib/logging/renderer/install'
 
+import { registerAISettingsOpener } from '../lib/ai/settings-link'
 import * as React from 'react'
 import * as ReactDOM from 'react-dom'
 import * as Path from 'path'
@@ -343,6 +344,7 @@ dispatcher.registerErrorHandler(insufficientGitHubRepoPermissions)
 dispatcher.registerErrorHandler(pushNeedsPullHandler)
 dispatcher.registerErrorHandler(samlReauthRequired)
 dispatcher.registerErrorHandler(backgroundTaskHandler)
+registerAISettingsOpener(dispatcher)
 dispatcher.registerErrorHandler(missingRepositoryHandler)
 dispatcher.registerErrorHandler(localChangesOverwrittenHandler)
 dispatcher.registerErrorHandler(rebaseConflictsHandler)

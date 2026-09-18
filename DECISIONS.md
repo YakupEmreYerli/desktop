@@ -3,6 +3,21 @@
 Why the fork is built the way it is. Newest first. How things work today is in
 `ARCHITECTURE.md`.
 
+## 2026-09-18: Translation through three providers, one module
+
+DeepSeek and OpenRouter are cheap, pay-per-use APIs (OpenRouter reaches
+Gemini and most other models with one key); the local `claude` CLI uses a
+Claude subscription the maintainer already pays for. All three sit behind
+`completeWithAI` so the planned Claude commit messages reuse the same
+settings. Upstream's Copilot BYOK needs the Copilot SDK and a Copilot account,
+so it isn't used; only the keychain storage pattern is copied.
+
+Settings live in Options (a new last tab) as the maintainer asked; the diff
+view links there instead of carrying its own settings. The translation works
+on blocks rather than the whole file so cached paragraphs are reused and the
+changed ones can be highlighted in the translation itself. Code is the
+default view because every translation costs a request.
+
 ## 2026-09-18: HTML previews as a view over the text diff
 
 HTML is text, and staging single lines only works in the text diff, so the
