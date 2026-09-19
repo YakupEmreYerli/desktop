@@ -340,23 +340,58 @@ async function translateBatch(
 }
 
 /**
- * Make a translation exactly `count` lines long: extra lines are joined onto
- * the last one, missing lines are left empty.
+ * Make a translation exactly as many lines long as its source. Extra lines are
+ * joined onto the last one. When the model returned fewer lines (often the
+ * whole paragraph on one line), the words are spread over the source's lines
+ * in proportion to their lengths, so no line is left empty while another
+ * runs off the screen.
  */
 export function fitToLineCount(
   translation: string,
-  count: number
+  sourceLines: ReadonlyArray<string>
 ): ReadonlyArray<string> {
+  const count = sourceLines.length
   const lines = translation.split(/\r?\n/)
   if (lines.length > count) {
     const kept = lines.slice(0, count - 1)
     kept.push(lines.slice(count - 1).join(' '))
     return kept
   }
-  while (lines.length < count) {
-    lines.push('')
+  if (lines.length === count) {
+    return lines
   }
-  return lines
+
+  const words = lines
+    .join(' ')
+    .split(/\s+/)
+    .filter(w => w.length > 0)
+  const weights = sourceLines.map(l => Math.max(1, l.trim().length))
+  const totalWeight = weights.reduce((a, b) => a + b, 0)
+  const textLength = words.join(' ').length
+  const result = sourceLines.map(() => new Array<string>())
+
+  let line = 0
+  let weightSoFar = weights[0]
+  let used = 0
+  for (const word of words) {
+    // Move to the next line once this word would sit mostly past the share
+    // of the text the current line should hold
+    while (
+      line < count - 1 &&
+      result[line].length > 0 &&
+      used + word.length / 2 > (textLength * weightSoFar) / totalWeight
+    ) {
+      line++
+      weightSoFar += weights[line]
+    }
+    result[line].push(word)
+    used += word.length + 1
+  }
+
+  return result.map((w, i) => {
+    const indent = /^\s*/.exec(sourceLines[i])?.[0] ?? ''
+    return w.length === 0 ? '' : indent + w.join(' ')
+  })
 }
 
 /**
@@ -375,8 +410,8 @@ export function translateLines(
     if (translation === undefined) {
       continue
     }
-    const count = block.end - block.start + 1
-    fitToLineCount(translation, count).forEach((line, i) => {
+    const source = lines.slice(block.start - 1, block.end)
+    fitToLineCount(translation, source).forEach((line, i) => {
       result[block.start - 1 + i] = line
     })
   }

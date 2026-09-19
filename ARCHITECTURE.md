@@ -165,8 +165,10 @@ committing behave as in the code view.
 lines, keeping fenced code whole; code isn't translated. The rest go to the
 provider as `{"blocks": [...]}` in batches of about 8000 characters, three
 requests at a time; the reply must have the same number of blocks, and each
-block the same number of lines (`fitToLineCount` joins extra lines onto the
-last and pads missing ones). Translations are cached per block (SHA-1 of the
+block the same number of lines. `fitToLineCount` joins extra lines onto the
+last; when a block comes back short (models often return a paragraph on one
+line), it spreads the words over the source lines in proportion to their
+length, keeping each line's indentation. Translations are cached per block (SHA-1 of the
 source) in local storage, up to 3000 entries, so unchanged paragraphs shared
 by the old and new version are translated once and after an edit only the
 changed ones go out again. "Translate again" ignores the cache. Lines whose

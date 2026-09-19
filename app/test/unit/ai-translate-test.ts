@@ -51,15 +51,52 @@ describe('splitIntoBlocks', () => {
 
 describe('fitToLineCount', () => {
   it('keeps a translation with the right number of lines', () => {
-    assert.deepStrictEqual(fitToLineCount('bir\niki', 2), ['bir', 'iki'])
+    assert.deepStrictEqual(fitToLineCount('bir\niki', ['one', 'two']), [
+      'bir',
+      'iki',
+    ])
   })
 
   it('joins extra lines onto the last one', () => {
-    assert.deepStrictEqual(fitToLineCount('bir\niki\nüç', 2), ['bir', 'iki üç'])
+    assert.deepStrictEqual(
+      fitToLineCount('bir\niki\nüç', ['one', 'two three']),
+      ['bir', 'iki üç']
+    )
   })
 
-  it('pads missing lines', () => {
-    assert.deepStrictEqual(fitToLineCount('bir', 3), ['bir', '', ''])
+  it('spreads a paragraph returned on one line over the source lines', () => {
+    const source = [
+      'The quick brown fox jumps over',
+      'the lazy dog and runs into the',
+      'forest before night falls.',
+    ]
+    const lines = fitToLineCount(
+      'Hızlı kahverengi tilki tembel köpeğin üzerinden atlar ve gece çökmeden ormana koşar.',
+      source
+    )
+    assert.equal(lines.length, 3)
+    assert(
+      lines.every(l => l.length > 0),
+      JSON.stringify(lines)
+    )
+    assert.equal(
+      lines.join(' '),
+      'Hızlı kahverengi tilki tembel köpeğin üzerinden atlar ve gece çökmeden ormana koşar.'
+    )
+    // Roughly even, like the source
+    assert(Math.max(...lines.map(l => l.length)) < 40, JSON.stringify(lines))
+  })
+
+  it('keeps the source indentation and leaves lines empty only when out of words', () => {
+    assert.deepStrictEqual(fitToLineCount('bir', ['a', '  b', 'c']), [
+      'bir',
+      '',
+      '',
+    ])
+    assert.deepStrictEqual(
+      fitToLineCount('bir iki', ['- first item', '  continued']),
+      ['bir', '  iki']
+    )
   })
 })
 
