@@ -29,6 +29,7 @@ This is not an official GitHub product. For the official app see
 | Feature | Details |
 |---|---|
 | **PDF previews in diffs** | Added and deleted PDFs show their pages; modified PDFs show old and new pages side by side, with page navigation. Long documents are drawn page by page as you scroll. Works in the changes and history views. |
+| **SVG previews in diffs** | SVG files show as images, old and new side by side, with swipe, onion skin and difference modes and a Preview/Code switch. |
 | **HTML previews in diffs** | HTML files open as rendered pages, old and new side by side when modified, with a Preview/Code switch. Local stylesheets, images and scripts load; scripts run sandboxed. |
 | **Turkish translation of documents** | Markdown and text files get a Code / Türkçe switch that shows the file translated into Turkish, changed paragraphs highlighted. Works with DeepSeek, OpenRouter or your Claude subscription (Options → AI). |
 | **Tidier changes filter** | Filter options have count badges and full-width rows, and the popover stays open while you pick several filters. |

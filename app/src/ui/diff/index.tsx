@@ -1,4 +1,6 @@
 import * as React from 'react'
+import { SvgDiff } from './svg-diffs/svg-diff'
+import { isSvgPath } from '../../lib/svg'
 
 import { assertNever } from '../../lib/fatal-error'
 import { encodePathAsUrl } from '../../lib/path'
@@ -279,7 +281,7 @@ export class Diff extends React.Component<IDiffProps, IDiffState> {
 
   /**
    * Offer another view next to the code view: a rendered preview for HTML
-   * files, a Turkish translation for text documents.
+   * and SVG files, a Turkish translation for text documents.
    */
   private renderWithDocumentView(
     code: JSX.Element,
@@ -296,6 +298,17 @@ export class Diff extends React.Component<IDiffProps, IDiffState> {
           repositoryPath={this.props.repository.path}
           fileContents={fileContents}
           code={code}
+        />
+      )
+    }
+
+    if (isSvgPath(file.path)) {
+      return (
+        <SvgDiff
+          fileContents={fileContents}
+          code={code}
+          imageDiffType={this.props.imageDiffType}
+          onChangeImageDiffType={this.props.onChangeImageDiffType}
         />
       )
     }

@@ -225,6 +225,8 @@ async function setCommitSettings(settings: {
   readonly otherLanguage?: string
   readonly style?: string
   readonly customStyle?: string
+  readonly description?: string
+  readonly customDescription?: string
 }) {
   const dialog = await openAIOptions()
   const commit = dialog.locator('section.ai-task', {
@@ -243,6 +245,16 @@ async function setCommitSettings(settings: {
   }
   if (settings.customStyle !== undefined) {
     await commit.getByLabel('Your rules').fill(settings.customStyle)
+  }
+  if (settings.description !== undefined) {
+    await commit
+      .getByLabel('Description', { exact: true })
+      .selectOption(settings.description)
+  }
+  if (settings.customDescription !== undefined) {
+    await commit
+      .getByLabel('How to write the description')
+      .fill(settings.customDescription)
   }
   await closeOptions()
 }
@@ -433,4 +445,32 @@ test('the example commit follows the language and style', async () => {
   await commit.getByLabel('Language', { exact: true }).selectOption('turkish')
   await commit.getByLabel('Style').selectOption('plain')
   await closeOptions()
+})
+
+test('the description can be left out', async () => {
+  test.setTimeout(180_000)
+  await setCommitSettings({ style: 'plain', description: 'never' })
+  const dialog = await openAIOptions()
+  await expect(
+    dialog.locator('.commit-preview-example .commit-preview-description')
+  ).toHaveCount(0)
+  await closeOptions()
+
+  const { title, body } = await generate()
+  expect(title).not.toBe('')
+  expect(body).toBe('')
+})
+
+test('the description follows custom rules', async () => {
+  test.setTimeout(180_000)
+  await setCommitSettings({
+    description: 'custom',
+    customDescription:
+      'Write the description as two to four bullet lines, each starting with "- ".',
+  })
+  const { body } = await generate()
+  const lines = body.split('\n').filter(l => l.trim() !== '')
+  expect(lines.length).toBeGreaterThanOrEqual(2)
+  expect(lines.every(l => l.startsWith('- '))).toBe(true)
+  await setCommitSettings({ description: 'auto', style: 'repository' })
 })

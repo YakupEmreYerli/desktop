@@ -2,6 +2,7 @@ import * as React from 'react'
 import { Octicon } from '../octicons'
 import * as octicons from '../octicons/octicons.generated'
 import {
+  CommitDescriptionMode,
   CommitMessageLanguage,
   CommitMessageStyle,
 } from '../../lib/ai/commit-message'
@@ -93,6 +94,7 @@ interface ICommitMessagePreviewProps {
   readonly language: CommitMessageLanguage
   readonly otherLanguage: string
   readonly style: CommitMessageStyle
+  readonly description: CommitDescriptionMode
 }
 
 /**
@@ -122,7 +124,12 @@ export class CommitMessagePreview extends React.Component<ICommitMessagePreviewP
 
   private renderCommit(example: IExampleCommit) {
     return (
-      <CommitCard title={example.title} description={example.description} />
+      <CommitCard
+        title={example.title}
+        description={
+          this.props.description === 'never' ? undefined : example.description
+        }
+      />
     )
   }
 

@@ -14,7 +14,7 @@ conflicts.
 |---|---|
 | `app/src/lib/git/diff.ts` | `buildDiff` sends `.pdf` paths to `getImageDiff`; `getMediaType` returns `application/pdf` |
 | `app/src/ui/diff/index.tsx` | `renderImage` renders `PdfDiff` when the image is a PDF |
-| `app/src/ui/diff/index.tsx` | `renderText` and the large text case go through `renderWithDocumentView`: `HtmlDiff` for `.html`/`.htm`, `TranslationDiff` for text documents |
+| `app/src/ui/diff/index.tsx` | `renderText` and the large text case go through `renderWithDocumentView`: `HtmlDiff` for `.html`/`.htm`, `SvgDiff` for `.svg`, `TranslationDiff` for text documents |
 | `app/src/models/preferences.ts` | `PreferencesTab.AI` (last, so Copilot's hidden-tab index shift still holds) |
 | `app/src/ui/preferences/preferences.tsx` | AI tab: tab label, `getTabId` case, renders `AIPreferences` |
 | `app/src/ui/index.tsx` | `registerAISettingsOpener(dispatcher)` |
@@ -130,6 +130,20 @@ inline, and then send off, files from elsewhere on the machine.
 Styles: `app/styles/ui/_html-diff.scss`. Tests:
 `app/test/unit/html-preview-test.ts`.
 
+## SVG previews in diffs
+
+Git sees SVG as text, so an SVG stays a text diff and, like HTML, gets a
+Preview/Code switch (`ui/diff/svg-diffs/svg-diff.tsx`, Preview by default,
+remembered in `svg-diff-show-code`). The preview hands the old and new
+source from `fileContents` to upstream's image views as `Image`s with the
+`image/svg+xml` media type (`lib/svg.ts`): `ModifiedImageDiff` with its
+2-up, swipe, onion skin and difference modes for a modified file,
+`NewImageDiff` or `DeletedImageDiff` otherwise. The views draw an `<img>`
+with a data URI, where an SVG's scripts don't run and nothing outside the
+document is loaded, so no sandbox is needed.
+
+Styles: `_svg-diff.scss`. Tests: `app/test/e2e/svg-preview.e2e.ts`.
+
 ## AI providers
 
 `app/src/lib/ai/providers.ts` is the one place fork features call a model.
@@ -206,6 +220,13 @@ example commit (commit icon, title, description) for the picked style, in
 Turkish when Turkish is picked and in English otherwise, with a note for
 another language; the repository style shows an earlier commit and the new
 one written to match it, and Custom shows none.
+
+**Description** (`ai-commit-message-description`): Automatic (the history
+decides in the repository style, otherwise why in short paragraphs, empty
+for trivial changes), Always, Never (the answer's description is dropped
+too), or Custom (the user's rules, placed after the general rules so they
+win; Automatic when empty). The example commit leaves the description out
+for Never.
 
 Every other style asks for a description of why in short paragraphs, treats the
 diff as data and wants a JSON answer, read with upstream's

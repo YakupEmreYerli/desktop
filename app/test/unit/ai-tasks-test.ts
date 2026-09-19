@@ -78,6 +78,8 @@ describe('commit message generation', () => {
       otherLanguage: '',
       style: 'repository',
       customStyle: '',
+      description: 'auto',
+      customDescription: '',
     })
     setCommitMessageSettings({ language: 'other', otherLanguage: 'Deutsch' })
     setCommitMessageSettings({ style: 'gitmoji' })
@@ -86,6 +88,8 @@ describe('commit message generation', () => {
       otherLanguage: 'Deutsch',
       style: 'gitmoji',
       customStyle: '',
+      description: 'auto',
+      customDescription: '',
     })
   })
 
@@ -179,6 +183,47 @@ describe('commit message generation', () => {
     assert.doesNotMatch(
       buildCommitMessageInstructions(settings({ style: 'custom' })),
       /<rules>/
+    )
+  })
+
+  it('writes the description as picked', () => {
+    const rules = (
+      change: Partial<ICommitMessageSettings>,
+      history?: string[]
+    ) => buildCommitMessageInstructions(settings(change), history)
+    const plain = { style: 'plain' as const }
+
+    assert.match(rules(plain), /Leave it empty for a trivial change/)
+    assert.match(
+      rules({ ...plain, description: 'never' }),
+      /Write no description/
+    )
+    assert.match(
+      rules({ ...plain, description: 'always' }),
+      /Always write a description: the description says why/
+    )
+    assert.match(
+      rules({ style: 'repository', description: 'always' }, ['C: x']),
+      /shaped like the history's descriptions/
+    )
+    const custom = rules({
+      ...plain,
+      description: 'custom',
+      customDescription: 'List the parts as bullets.',
+    })
+    assert.match(
+      custom,
+      /<description-rules>\nList the parts as bullets\.\n<\/description-rules>/
+    )
+    // The user's rules come after the general ones, so they win
+    assert(
+      custom.indexOf("Don't list every file") <
+        custom.indexOf('<description-rules>')
+    )
+    // Custom without rules is automatic
+    assert.match(
+      rules({ ...plain, description: 'custom' }),
+      /Leave it empty for a trivial change/
     )
   })
 

@@ -19,12 +19,16 @@ notes are in `changelog.json` and on
   `.md`, `.txt` and `.rst` files shows the same diff with its text translated
   line for line. Documents already in Turkish get no switch. Uses DeepSeek, OpenRouter or the local Claude CLI,
   set up in the new Options → AI tab.
+- SVG previews in diffs: SVG files show as images, old and new side by side
+  with the same swipe, onion skin and difference modes as pictures, with a
+  switch back to the code.
 - Commit messages written by AI: a sparkle button next to the commit message
   writes the title and description from the selected changes, for you to
   read before committing. Language: Turkish, English or any other you name
   (English if the model doesn't know it). Style: the repository's own
   history (the default, so new commits read like the earlier ones), plain,
-  Conventional Commits, Gitmoji, or your own rules. Options → AI now picks a
+  Conventional Commits, Gitmoji, or your own rules. Description:
+  automatic, always, never, or written by your own rules. Options → AI now picks a
   provider and model per feature, so translation and commit messages can use
   different ones (say Claude for translation, DeepSeek Flash for commits).
 - Repository groups: arrange the repository list into your own groups

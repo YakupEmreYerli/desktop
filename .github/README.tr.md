@@ -18,6 +18,7 @@ Resmî bir GitHub ürünü değildir. Resmî uygulama için
 | Özellik | Ayrıntı |
 |---|---|
 | **Diff'te PDF önizleme** | Eklenen ve silinen PDF'lerin sayfaları görünür; değişen PDF'te eski ve yeni sayfalar yan yana durur, sayfalar arasında gezinilir. Uzun belgeler kaydırdıkça sayfa sayfa çizilir. Değişiklikler ve geçmiş görünümlerinde çalışır. |
+| **Diff'te SVG önizleme** | SVG dosyaları resim olarak görünür; eski ve yeni hâl yan yana, kaydırmalı, üst üste ve fark modlarıyla karşılaştırılır, Önizleme/Kod düğmesiyle koda geçilir. |
 | **Diff'te HTML önizleme** | HTML dosyaları sayfa olarak açılır; değişen dosyada eski ve yeni hâl yan yana durur, Önizleme/Kod düğmesiyle kod farkına geçilir. Yerel CSS, resim ve script'ler yüklenir; script'ler kafeste çalışır. |
 | **Belgelerin Türkçe çevirisi** | Markdown ve metin dosyalarında Kod / Türkçe düğmesi dosyayı Türkçe'ye çevrilmiş gösterir, değişen paragraflar işaretlidir. DeepSeek, OpenRouter ya da Claude aboneliğinle çalışır (Seçenekler → AI). |
 | **Derli toplu değişiklik filtresi** | Filtre seçeneklerinde sayı rozetleri ve tam genişlik satırlar var; birden fazla filtre seçerken pencere açık kalır. |

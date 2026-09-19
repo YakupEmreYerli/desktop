@@ -31,6 +31,8 @@ import {
 import { TextArea } from '../lib/text-area'
 import { CommitMessagePreview } from './commit-message-preview'
 import {
+  CommitDescriptionModeNames,
+  CommitDescriptionModes,
   CommitMessageLanguageNames,
   CommitMessageLanguages,
   CommitMessageStyleNames,
@@ -194,6 +196,20 @@ class TaskSettings extends React.Component<
     this.updateCommitMessage({ customStyle })
   }
 
+  private onDescriptionChanged = (
+    event: React.FormEvent<HTMLSelectElement>
+  ) => {
+    const value = event.currentTarget.value
+    const description = CommitDescriptionModes.find(d => d === value)
+    if (description !== undefined) {
+      this.updateCommitMessage({ description })
+    }
+  }
+
+  private onCustomDescriptionChanged = (customDescription: string) => {
+    this.updateCommitMessage({ customDescription })
+  }
+
   private onTest = async () => {
     const { provider, model } = this.state
     if (provider === null) {
@@ -246,8 +262,14 @@ class TaskSettings extends React.Component<
   }
 
   private renderCommitMessageSettings() {
-    const { language, otherLanguage, style, customStyle } =
-      this.state.commitMessage
+    const {
+      language,
+      otherLanguage,
+      style,
+      customStyle,
+      description,
+      customDescription,
+    } = this.state.commitMessage
 
     return (
       <>
@@ -295,10 +317,33 @@ class TaskSettings extends React.Component<
             onValueChanged={this.onCustomStyleChanged}
           />
         )}
+        <Select
+          label="Description"
+          value={description}
+          onChange={this.onDescriptionChanged}
+        >
+          {CommitDescriptionModes.map(d => (
+            <option key={d} value={d}>
+              {CommitDescriptionModeNames[d]}
+            </option>
+          ))}
+        </Select>
+        {description === 'custom' && (
+          <TextArea
+            label="How to write the description"
+            value={customDescription}
+            rows={3}
+            placeholder={
+              'List the changed parts as short bullet points.\nMention the ticket number at the end.'
+            }
+            onValueChanged={this.onCustomDescriptionChanged}
+          />
+        )}
         <CommitMessagePreview
           language={language}
           otherLanguage={otherLanguage}
           style={style}
+          description={description}
         />
       </>
     )
