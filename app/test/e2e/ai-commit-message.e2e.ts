@@ -164,13 +164,16 @@ test('each feature has its own provider; the old setting goes to translation', a
 
   await expect(translation.getByLabel('Provider')).toHaveValue('claude')
   await expect(commit.getByLabel('Provider')).toHaveValue('none')
-  await expect(commit.getByLabel('Language')).toHaveValue('turkish')
+  // Language and style only show once the feature has a provider
+  await expect(commit.getByLabel('Language')).toHaveCount(0)
 
   await commit.getByLabel('Provider').selectOption('deepseek')
   await expect(commit.getByLabel('Model')).toHaveValue('deepseek-flash')
   await commit.getByLabel('Provider').selectOption('claude')
   await commit.locator('.ai-model-suggestion', { hasText: 'haiku' }).click()
   await expect(commit.getByLabel('Model')).toHaveValue('haiku')
+  await expect(commit.getByLabel('Language')).toHaveValue('turkish')
+  await expect(commit.getByLabel('Style')).toHaveValue('plain')
 
   // Translation kept its own choice
   await expect(translation.getByLabel('Provider')).toHaveValue('claude')
@@ -214,6 +217,116 @@ test('the button writes a Turkish title and description without committing', asy
   expect(`${title} ${body}`).toMatch(/[çğıİöşü]/)
   expect(git('rev-list', '--count', 'HEAD')).toBe(commitsBefore)
   await expect(page.locator('.commit-button')).toBeEnabled()
+})
+
+async function setCommitSettings(settings: {
+  readonly language?: string
+  readonly otherLanguage?: string
+  readonly style?: string
+  readonly customStyle?: string
+}) {
+  const dialog = await openAIOptions()
+  const commit = dialog.locator('section.ai-task', {
+    has: page.locator('h3', { hasText: 'Commit messages' }),
+  })
+  if (settings.language !== undefined) {
+    await commit
+      .getByLabel('Language', { exact: true })
+      .selectOption(settings.language)
+  }
+  if (settings.otherLanguage !== undefined) {
+    await commit.getByLabel('Language name').fill(settings.otherLanguage)
+  }
+  if (settings.style !== undefined) {
+    await commit.getByLabel('Style').selectOption(settings.style)
+  }
+  if (settings.customStyle !== undefined) {
+    await commit.getByLabel('Your rules').fill(settings.customStyle)
+  }
+  await closeOptions()
+}
+
+async function generate() {
+  await summary().fill('')
+  await description().fill('')
+  await aiButton().click()
+  await expect(summary()).not.toHaveValue('', { timeout: 150_000 })
+  const title = await summary().inputValue()
+  const body = await description().inputValue()
+  console.log(`[e2e] ${title}\n${body}\n`)
+  return { title, body }
+}
+
+test('Conventional Commits keeps the type in English', async () => {
+  test.setTimeout(180_000)
+  await setCommitSettings({ style: 'conventional' })
+  const { title } = await generate()
+  expect(title).toMatch(
+    /^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\([a-z0-9-]+\))?!?: \S/
+  )
+  expect(title.length).toBeLessThanOrEqual(72)
+})
+
+test('Gitmoji starts with an emoji', async () => {
+  test.setTimeout(180_000)
+  await setCommitSettings({ style: 'gitmoji' })
+  const { title } = await generate()
+  expect(title).toMatch(/^\p{Extended_Pictographic}/u)
+})
+
+test("the repository's style follows its history", async () => {
+  test.setTimeout(180_000)
+  // A history in an unusual shape: bracketed area, upper case, dash
+  for (const [file, message] of [
+    ['a.txt', '[DOCS] - README GÜNCELLENDİ'],
+    ['b.txt', '[CART] - İNDİRİM KODU EKLENDİ'],
+    ['c.txt', '[CART] - KDV HESABI DÜZELTİLDİ'],
+  ]) {
+    fs.writeFileSync(path.join(repository, file), message)
+    git('add', file)
+    git('commit', '-m', message)
+  }
+  await setCommitSettings({ style: 'repository' })
+  const { title } = await generate()
+  expect(title).toMatch(/^\[[A-ZÇĞİÖŞÜ]+\] - /)
+})
+
+test('custom rules are followed', async () => {
+  test.setTimeout(180_000)
+  await setCommitSettings({
+    style: 'custom',
+    customStyle:
+      'Start every title with "SHOP-42: ". Leave the description empty.',
+  })
+  const { title, body } = await generate()
+  expect(title).toMatch(/^SHOP-42: /)
+  expect(body).toBe('')
+})
+
+test('another language is written in that language', async () => {
+  test.setTimeout(180_000)
+  await setCommitSettings({
+    language: 'other',
+    otherLanguage: 'Deutsch',
+    style: 'plain',
+  })
+  const { title, body } = await generate()
+  // German words, no Turkish letters
+  expect(`${title} ${body}`).not.toMatch(/[ğışİ]/)
+  expect(`${title} ${body}`).toMatch(
+    /\b(der|die|das|und|für|mit|Versand|Menge|Gesamt\w*|hinzufügen|berechnen|berücksichtigen)\b/i
+  )
+})
+
+test('an unknown language falls back to English', async () => {
+  test.setTimeout(180_000)
+  await setCommitSettings({ otherLanguage: 'Blorbish' })
+  const { title, body } = await generate()
+  expect(`${title} ${body}`).toMatch(/^[\x20-\x7E\n]+$/)
+  expect(`${title} ${body}`).toMatch(
+    /\b(the|and|to|for|with|add|calculate|shipping)\b/i
+  )
+  await setCommitSettings({ language: 'turkish' })
 })
 
 test('a typed message is only replaced after confirming', async () => {

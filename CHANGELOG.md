@@ -20,8 +20,10 @@ notes are in `changelog.json` and on
   line for line. Documents already in Turkish get no switch. Uses DeepSeek, OpenRouter or the local Claude CLI,
   set up in the new Options → AI tab.
 - Commit messages written by AI: a sparkle button next to the commit message
-  writes the title and description from the selected changes, in Turkish
-  (or English), for you to read before committing. Options → AI now picks a
+  writes the title and description from the selected changes, for you to
+  read before committing. Language: Turkish, English or any other you name
+  (English if the model doesn't know it). Style: plain, Conventional
+  Commits, Gitmoji, the repository's own history, or your own rules. Options → AI now picks a
   provider and model per feature, so translation and commit messages can use
   different ones (say Claude for translation, DeepSeek Flash for commits).
 - Repository groups: arrange the repository list into your own groups

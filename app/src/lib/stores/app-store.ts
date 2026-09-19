@@ -6478,7 +6478,11 @@ export class AppStore extends TypedBaseStore<IAppState> {
         if (!diff) {
           return false
         }
-        const message = await generateCommitMessageWithAI(diff, signal)
+        const message = await generateCommitMessageWithAI(
+          repository.path,
+          diff,
+          signal
+        )
         this._setCommitMessage(repository, {
           summary: message.title,
           description: message.description,

@@ -8,10 +8,12 @@ import {
   setTaskProvider,
 } from '../../src/lib/ai/providers'
 import {
+  CommitMessageStyles,
+  ICommitMessageSettings,
   buildCommitMessageInstructions,
-  getCommitMessageLanguage,
+  getCommitMessageSettings,
   prepareDiff,
-  setCommitMessageLanguage,
+  setCommitMessageSettings,
 } from '../../src/lib/ai/commit-message'
 
 afterEach(() => localStorage.clear())
@@ -65,24 +67,97 @@ describe('AI task settings', () => {
 })
 
 describe('commit message generation', () => {
-  it('writes Turkish unless English is picked', () => {
-    assert.equal(getCommitMessageLanguage(), 'turkish')
-    setCommitMessageLanguage('english')
-    assert.equal(getCommitMessageLanguage(), 'english')
+  const settings = (change: Partial<ICommitMessageSettings> = {}) => ({
+    ...getCommitMessageSettings(),
+    ...change,
   })
 
-  it('asks for the language, imperative mood and JSON', () => {
-    const turkish = buildCommitMessageInstructions('turkish')
-    assert.match(turkish, /Write in Turkish/)
-    assert.match(turkish, /imperative/)
-    assert.match(turkish, /\{"title": "\.\.\.", "description": "\.\.\."\}/)
-    assert.match(buildCommitMessageInstructions('english'), /Write in English/)
+  it('defaults to plain Turkish and keeps what is picked', () => {
+    assert.deepStrictEqual(getCommitMessageSettings(), {
+      language: 'turkish',
+      otherLanguage: '',
+      style: 'plain',
+      customStyle: '',
+    })
+    setCommitMessageSettings({ language: 'other', otherLanguage: 'Deutsch' })
+    setCommitMessageSettings({ style: 'gitmoji' })
+    assert.deepStrictEqual(getCommitMessageSettings(), {
+      language: 'other',
+      otherLanguage: 'Deutsch',
+      style: 'gitmoji',
+      customStyle: '',
+    })
+  })
+
+  it('ignores unknown stored values', () => {
+    localStorage.setItem('ai-commit-message-language', 'klingon')
+    localStorage.setItem('ai-commit-message-style', 'haiku')
+    const { language, style } = getCommitMessageSettings()
+    assert.equal(language, 'turkish')
+    assert.equal(style, 'plain')
+  })
+
+  it('names the language, with English as the fallback', () => {
+    assert.match(buildCommitMessageInstructions(settings()), /Write in Turkish/)
+    assert.match(
+      buildCommitMessageInstructions(settings({ language: 'english' })),
+      /Write in English/
+    )
+    const german = buildCommitMessageInstructions(
+      settings({ language: 'other', otherLanguage: ' Deutsch ' })
+    )
+    assert.match(german, /the user named: "Deutsch"/)
+    assert.match(german, /don't recognize it as a language, write in English/)
+    // Other without a name is English
+    assert.match(
+      buildCommitMessageInstructions(settings({ language: 'other' })),
+      /Write in English/
+    )
+  })
+
+  it('describes each style and always asks for JSON', () => {
+    const rules = (
+      change: Partial<ICommitMessageSettings>,
+      history?: string[]
+    ) => buildCommitMessageInstructions(settings(change), history)
+
+    assert.match(rules({}), /without\s+a trailing period, a type prefix/)
+    assert.match(rules({ style: 'conventional' }), /"type\(scope\): summary"/)
+    assert.match(rules({ style: 'gitmoji' }), /✨ new feature/)
+    for (const style of CommitMessageStyles) {
+      assert.match(
+        rules({ style }),
+        /\{"title": "\.\.\.", "description": "\.\.\."\}$/
+      )
+    }
+  })
+
+  it('shows the history for the repository style, plain without one', () => {
+    const withHistory = buildCommitMessageInstructions(
+      settings({ style: 'repository' }),
+      ['🐛 Fix the cart', '✨ Add coupons\n\nWhy coupons.']
+    )
+    assert.match(withHistory, /<history>\n🐛 Fix the cart\n---\n✨ Add coupons/)
+    assert.doesNotMatch(
+      buildCommitMessageInstructions(settings({ style: 'repository' }), []),
+      /<history>/
+    )
+  })
+
+  it('adds custom rules, plain when there are none', () => {
+    const custom = buildCommitMessageInstructions(
+      settings({ style: 'custom', customStyle: 'Prefix with PRJ-12.' })
+    )
+    assert.match(custom, /<rules>\nPrefix with PRJ-12\.\n<\/rules>/)
+    assert.doesNotMatch(
+      buildCommitMessageInstructions(settings({ style: 'custom' })),
+      /<rules>/
+    )
   })
 
   it('cuts a long diff at a line and says so', () => {
     const line = 'x'.repeat(99) + '\n'
-    const diff = line.repeat(1000)
-    const prepared = prepareDiff(diff)
+    const prepared = prepareDiff(line.repeat(1000))
     assert(prepared.length < 61_000)
     assert.match(prepared, /more characters, was cut\.\]$/)
     assert(

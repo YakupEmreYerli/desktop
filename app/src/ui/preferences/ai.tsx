@@ -28,12 +28,16 @@ import {
   setTaskProvider,
   testProvider,
 } from '../../lib/ai/providers'
+import { TextArea } from '../lib/text-area'
 import {
-  CommitMessageLanguage,
   CommitMessageLanguageNames,
   CommitMessageLanguages,
-  getCommitMessageLanguage,
-  setCommitMessageLanguage,
+  CommitMessageStyleExamples,
+  CommitMessageStyleNames,
+  CommitMessageStyles,
+  ICommitMessageSettings,
+  getCommitMessageSettings,
+  setCommitMessageSettings,
 } from '../../lib/ai/commit-message'
 
 /** One line under each provider's name */
@@ -120,7 +124,7 @@ const errorMessage = (e: unknown) =>
 interface ITaskSettingsState {
   readonly provider: AIProviderKind | null
   readonly model: string
-  readonly language: CommitMessageLanguage
+  readonly commitMessage: ICommitMessageSettings
   readonly test: TestResult
 }
 
@@ -136,7 +140,7 @@ class TaskSettings extends React.Component<
     this.state = {
       provider: getTaskProvider(props.task),
       model: getTaskModel(props.task),
-      language: getCommitMessageLanguage(),
+      commitMessage: getCommitMessageSettings(),
       test: { kind: 'idle' },
     }
   }
@@ -161,11 +165,33 @@ class TaskSettings extends React.Component<
     this.setState({ model, test: { kind: 'idle' } })
   }
 
+  private updateCommitMessage(change: Partial<ICommitMessageSettings>) {
+    setCommitMessageSettings(change)
+    this.setState({ commitMessage: getCommitMessageSettings() })
+  }
+
   private onLanguageChanged = (event: React.FormEvent<HTMLSelectElement>) => {
     const value = event.currentTarget.value
-    const language = CommitMessageLanguages.find(l => l === value) ?? 'turkish'
-    setCommitMessageLanguage(language)
-    this.setState({ language })
+    const language = CommitMessageLanguages.find(l => l === value)
+    if (language !== undefined) {
+      this.updateCommitMessage({ language })
+    }
+  }
+
+  private onOtherLanguageChanged = (otherLanguage: string) => {
+    this.updateCommitMessage({ otherLanguage })
+  }
+
+  private onStyleChanged = (event: React.FormEvent<HTMLSelectElement>) => {
+    const value = event.currentTarget.value
+    const style = CommitMessageStyles.find(s => s === value)
+    if (style !== undefined) {
+      this.updateCommitMessage({ style })
+    }
+  }
+
+  private onCustomStyleChanged = (customStyle: string) => {
+    this.updateCommitMessage({ customStyle })
   }
 
   private onTest = async () => {
@@ -212,22 +238,74 @@ class TaskSettings extends React.Component<
               </option>
             ))}
           </Select>
-          {task === 'commit-message' && (
-            <Select
-              label="Language"
-              value={this.state.language}
-              onChange={this.onLanguageChanged}
-            >
-              {CommitMessageLanguages.map(l => (
-                <option key={l} value={l}>
-                  {CommitMessageLanguageNames[l]}
-                </option>
-              ))}
-            </Select>
-          )}
         </div>
         {provider !== null && this.renderModel(provider)}
+        {provider !== null &&
+          task === 'commit-message' &&
+          this.renderCommitMessageSettings()}
       </section>
+    )
+  }
+
+  private renderCommitMessageSettings() {
+    const { language, otherLanguage, style, customStyle } =
+      this.state.commitMessage
+
+    return (
+      <>
+        <div className="ai-task-fields">
+          <Select
+            label="Language"
+            value={language}
+            onChange={this.onLanguageChanged}
+          >
+            {CommitMessageLanguages.map(l => (
+              <option key={l} value={l}>
+                {CommitMessageLanguageNames[l]}
+              </option>
+            ))}
+          </Select>
+          <Select label="Style" value={style} onChange={this.onStyleChanged}>
+            {CommitMessageStyles.map(s => (
+              <option key={s} value={s}>
+                {CommitMessageStyleNames[s]}
+              </option>
+            ))}
+          </Select>
+        </div>
+        {language === 'other' && (
+          <div className="ai-field">
+            <TextBox
+              label="Language name"
+              value={otherLanguage}
+              placeholder="Deutsch, Español, 日本語…"
+              onValueChanged={this.onOtherLanguageChanged}
+            />
+            <p className="ai-preferences-hint">
+              A language the model doesn't recognize falls back to English.
+            </p>
+          </div>
+        )}
+        {style === 'custom' ? (
+          <TextArea
+            label="Your rules"
+            value={customStyle}
+            rows={4}
+            placeholder={
+              'Start the title with the ticket number, like "PRJ-12: …".\nNo description for small changes.'
+            }
+            onValueChanged={this.onCustomStyleChanged}
+          />
+        ) : (
+          <p className="ai-style-example">
+            {style === 'repository' ? (
+              CommitMessageStyleExamples[style]
+            ) : (
+              <code>{CommitMessageStyleExamples[style]}</code>
+            )}
+          </p>
+        )}
+      </>
     )
   }
 

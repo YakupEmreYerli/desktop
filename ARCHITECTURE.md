@@ -178,16 +178,33 @@ the commit button and the abort signal the stop button fires),
 `getFilesDiffText` for the selected files (or against the amended commit's
 parent) and `_setCommitMessage`. Nothing is committed.
 
-`lib/ai/commit-message.ts` builds the instructions: the language (Turkish by
-default, English as the alternative, `ai-commit-message-language`), an
-imperative title of at most 72 characters without a type prefix or a
-period, a description of why in short paragraphs, the diff treated as data,
-and a JSON answer read with upstream's `parseCopilotCommitMessage`. Diffs
-over 60,000 characters are cut at a line with a note saying so.
+`lib/ai/commit-message.ts` builds the instructions from two settings, kept
+in local storage (`ai-commit-message-language`, `-other-language`,
+`-style`, `-custom-style`) and shown in Options → AI once the feature has a
+provider:
+
+- **Language:** Turkish (default, imperative, correct Turkish letters),
+  English, or Other with a free-text name. The model is told to write in
+  English when it doesn't recognize the name; Other without a name is
+  English.
+- **Style:** Plain (title of at most 72 characters without a type prefix or
+  period), Conventional Commits (`type(scope): summary`, the type in English
+  whatever the language, `!` and `BREAKING CHANGE:` for breaking changes),
+  Gitmoji (one emoji from a fixed list first), the repository's history (the
+  last 12 non-merge messages of the branch, `git log --format=%B`, each cut
+  to 800 characters, as examples; plain when there are none), or Custom
+  (the user's rules, which take precedence over the plain rules; plain when
+  empty).
+
+Every style asks for a description of why in short paragraphs, treats the
+diff as data and wants a JSON answer, read with upstream's
+`parseCopilotCommitMessage`. Diffs over 60,000 characters are cut at a line
+with a note saying so.
 
 Tests: `app/test/unit/ai-tasks-test.ts`; `app/test/e2e/ai-commit-message.e2e.ts`
-sets the providers in the real Options dialog, writes a message through the
-local `claude` CLI and checks the override warning and stopping.
+sets the providers, languages and styles in the real Options dialog, writes
+messages through the local `claude` CLI in every style and in German and an
+unknown language, and checks the override warning and stopping.
 
 ## Turkish translation of text documents
 

@@ -168,3 +168,14 @@
     }
   }
 }
+
+#preferences .ai-preferences .ai-style-example {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary-color);
+
+  code {
+    font-family: var(--font-family-monospace);
+    color: var(--text-color);
+  }
+}

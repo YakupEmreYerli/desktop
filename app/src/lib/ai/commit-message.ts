@@ -3,29 +3,90 @@ import {
   ICopilotCommitMessage,
   parseCopilotCommitMessage,
 } from '../copilot-commit-message'
+import { git } from '../git/core'
 
-/** The language commit messages are written in */
-export type CommitMessageLanguage = 'turkish' | 'english'
+/** The language commit messages are written in; `other` names one freely */
+export type CommitMessageLanguage = 'turkish' | 'english' | 'other'
 
 export const CommitMessageLanguages: ReadonlyArray<CommitMessageLanguage> = [
   'turkish',
   'english',
+  'other',
 ]
 
 export const CommitMessageLanguageNames: Record<CommitMessageLanguage, string> =
   {
     turkish: 'Türkçe',
     english: 'English',
+    other: 'Other…',
   }
 
-const LanguageKey = 'ai-commit-message-language'
+/** How commit messages are shaped */
+export type CommitMessageStyle =
+  | 'plain'
+  | 'conventional'
+  | 'gitmoji'
+  | 'repository'
+  | 'custom'
 
-export function getCommitMessageLanguage(): CommitMessageLanguage {
-  return localStorage.getItem(LanguageKey) === 'english' ? 'english' : 'turkish'
+export const CommitMessageStyles: ReadonlyArray<CommitMessageStyle> = [
+  'plain',
+  'conventional',
+  'gitmoji',
+  'repository',
+  'custom',
+]
+
+export const CommitMessageStyleNames: Record<CommitMessageStyle, string> = {
+  plain: 'Plain',
+  conventional: 'Conventional Commits',
+  gitmoji: 'Gitmoji',
+  repository: "Match the repository's history",
+  custom: 'Custom…',
 }
 
-export function setCommitMessageLanguage(language: CommitMessageLanguage) {
-  localStorage.setItem(LanguageKey, language)
+/** An example title per style, shown under the setting */
+export const CommitMessageStyleExamples: Record<CommitMessageStyle, string> = {
+  plain: 'Add a free shipping threshold to the cart total',
+  conventional: 'feat(cart): add a free shipping threshold',
+  gitmoji: '✨ Add a free shipping threshold to the cart total',
+  repository: 'Follows the format of the last commits in each repository',
+  custom: 'Follows the rules you write',
+}
+
+export interface ICommitMessageSettings {
+  readonly language: CommitMessageLanguage
+  /** The language's name when `language` is `other` */
+  readonly otherLanguage: string
+  readonly style: CommitMessageStyle
+  /** The user's own rules when `style` is `custom` */
+  readonly customStyle: string
+}
+
+const Keys = {
+  language: 'ai-commit-message-language',
+  otherLanguage: 'ai-commit-message-other-language',
+  style: 'ai-commit-message-style',
+  customStyle: 'ai-commit-message-custom-style',
+}
+
+export function getCommitMessageSettings(): ICommitMessageSettings {
+  const language = localStorage.getItem(Keys.language)
+  const style = localStorage.getItem(Keys.style)
+  return {
+    language: CommitMessageLanguages.find(l => l === language) ?? 'turkish',
+    otherLanguage: localStorage.getItem(Keys.otherLanguage) ?? '',
+    style: CommitMessageStyles.find(s => s === style) ?? 'plain',
+    customStyle: localStorage.getItem(Keys.customStyle) ?? '',
+  }
+}
+
+export function setCommitMessageSettings(
+  change: Partial<ICommitMessageSettings>
+) {
+  for (const [key, value] of Object.entries(change)) {
+    localStorage.setItem(Keys[key as keyof typeof Keys], value)
+  }
 }
 
 /**
@@ -34,24 +95,90 @@ export function setCommitMessageLanguage(language: CommitMessageLanguage) {
  */
 const MaxDiffLength = 60_000
 
-const LanguageRules: Record<CommitMessageLanguage, string> = {
-  turkish: `Write in Turkish, with correct Turkish characters (ç, ğ, ı, İ, ö, ş, ü).
-The title is in the imperative mood, like "Depo listesine gruplar ekle" or
-"Türkçe görünümde boş satırları düzelt", never "eklendi" or "ekledim".`,
-  english: `Write in English. The title is in the imperative mood, like "Add
-groups to the repository list", never "Added" or "Adds".`,
+/** Recent messages shown to the model for the repository's style */
+const HistoryCount = 12
+const MaxHistoryMessageLength = 800
+
+function languageRule(settings: ICommitMessageSettings) {
+  const other = settings.otherLanguage.trim()
+  if (settings.language === 'turkish') {
+    return `Write in Turkish, with correct Turkish characters (ç, ğ, ı, İ, ö, ş, ü).
+The summary is in the imperative mood, like "Depo listesine gruplar ekle" or
+"Türkçe görünümde boş satırları düzelt", never "eklendi" or "ekledim".`
+  }
+  if (settings.language === 'other' && other !== '') {
+    return `Write in the language the user named: ${JSON.stringify(other)}.
+Use that language's usual form for commit summaries (the imperative where it
+has one). If you don't recognize it as a language, write in English instead.`
+  }
+  return `Write in English. The summary is in the imperative mood, like "Add
+groups to the repository list", never "Added" or "Adds".`
+}
+
+const PlainTitle = `- The title says what the commit changes, in at most 72 characters, without
+  a trailing period, a type prefix ("feat:", "fix:") or a scope in brackets.`
+
+function styleRule(
+  settings: ICommitMessageSettings,
+  history: ReadonlyArray<string>
+) {
+  switch (settings.style) {
+    case 'conventional':
+      return `- Follow Conventional Commits: the title is "type(scope): summary".
+  type is one of feat, fix, docs, style, refactor, perf, test, build, ci,
+  chore or revert, always in English and lower case. scope is optional: a
+  short lower-case name of the part that changed. Put "!" after the type or
+  scope for a breaking change and explain it in the description in a
+  paragraph starting "BREAKING CHANGE:". The summary starts lower case
+  unless it begins with a name, and has no trailing period. The whole title
+  is at most 72 characters.`
+    case 'gitmoji':
+      return `- Start the title with the one gitmoji that fits the change best, then a
+  space and the summary: ✨ new feature, 🐛 bug fix, 🚑️ critical hotfix,
+  📝 documentation, ♻️ refactor, 🎨 structure or formatting, ⚡️ performance,
+  ✅ tests, 🔧 configuration, 🔥 removing code or files, ⬆️ dependency
+  upgrade, 💄 UI and styles, 🌐 translations, 🔒️ security. At most 72
+  characters, no trailing period.`
+    case 'repository':
+      if (history.length === 0) {
+        return PlainTitle
+      }
+      return `- Match the style of this repository's recent commit messages, given
+  below between <history> tags: their format, prefixes, emoji, casing,
+  length and how they use the description. The language rule above still
+  decides the language. The title is at most 72 characters.
+
+<history>
+${history.join('\n---\n')}
+</history>`
+    case 'custom': {
+      const rules = settings.customStyle.trim()
+      if (rules === '') {
+        return PlainTitle
+      }
+      return `${PlainTitle}
+- The user's own rules follow between <rules> tags. They take precedence
+  over the rules above, except the answer format.
+
+<rules>
+${rules}
+</rules>`
+    }
+    default:
+      return PlainTitle
+  }
 }
 
 export function buildCommitMessageInstructions(
-  language: CommitMessageLanguage
+  settings: ICommitMessageSettings,
+  history: ReadonlyArray<string> = []
 ) {
   return `You write git commit messages for the changes you are given.
 
-${LanguageRules[language]}
+${languageRule(settings)}
 
 Rules:
-- The title says what the commit changes, in at most 72 characters, without
-  a trailing period, a type prefix ("feat:", "fix:") or a scope in brackets.
+${styleRule(settings, history)}
 - The description says why the change was made and anything a reader of the
   history needs that the title can't hold, in one to three short paragraphs
   wrapped at 72 characters. Leave it empty for a trivial change.
@@ -74,13 +201,40 @@ export function prepareDiff(diff: string) {
   } more characters, was cut.]`
 }
 
+/** The last messages of the current branch, newest first; empty without any */
+async function getRecentCommitMessages(
+  repositoryPath: string
+): Promise<ReadonlyArray<string>> {
+  try {
+    const result = await git(
+      ['log', `-n${HistoryCount}`, '--no-merges', '--format=%B%x1e'],
+      repositoryPath,
+      'aiRecentCommitMessages'
+    )
+    return result.stdout
+      .split('\x1e')
+      .map(m => m.trim().slice(0, MaxHistoryMessageLength))
+      .filter(m => m !== '')
+  } catch {
+    // No commits yet
+    return []
+  }
+}
+
 /** Title and description for a diff, from the commit message task's provider */
 export async function generateCommitMessageWithAI(
+  repositoryPath: string,
   diff: string,
   signal?: AbortSignal
 ): Promise<ICopilotCommitMessage> {
+  const settings = getCommitMessageSettings()
+  const history =
+    settings.style === 'repository'
+      ? await getRecentCommitMessages(repositoryPath)
+      : []
+
   const reply = await completeWithAI('commit-message', {
-    system: buildCommitMessageInstructions(getCommitMessageLanguage()),
+    system: buildCommitMessageInstructions(settings, history),
     prompt: prepareDiff(diff),
     json: true,
     signal,
