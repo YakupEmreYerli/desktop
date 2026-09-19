@@ -19,7 +19,7 @@ conflicts.
 | `app/src/ui/preferences/preferences.tsx` | AI tab: tab label, `getTabId` case, renders `AIPreferences` |
 | `app/src/ui/index.tsx` | `registerAISettingsOpener(dispatcher)` |
 | `app/webpack.common.ts` | `PdfjsRuntimePlugin` in the renderer config |
-| `app/styles/_ui.scss` | imports `ui/pdf-diff`, `ui/html-diff`, `ui/view-switch`, `ui/translation-diff`, `ui/ai-preferences` |
+| `app/styles/_ui.scss` | imports `ui/pdf-diff`, `ui/html-diff`, `ui/view-switch`, `ui/translation-diff`, `ui/ai-preferences`, `ui/repository-groups` |
 | `app/styles/ui/_changes.scss` | imports `changes/filter-popover` |
 | `app/src/ui/changes/changes-list-filter-options.tsx` | options rendered through `renderOption`, popover stays open on toggle |
 | `app/package.json`, `app/yarn.lock` | `pdfjs-dist` dependency |
@@ -29,6 +29,9 @@ conflicts.
 | `app/src/ui/dispatcher/dispatcher.ts` | `dispatchCLIAction` hands add/remove to `dispatchRepositoryListAction` |
 | `app/src/ui/index.tsx` | `syncRepositoryListFile(appStore)` |
 | `app/src/ui/cli-action/test-cli-action-dialog.tsx` | tab kinds narrowed to open/clone |
+| `app/src/ui/repositories-list/repositories-list.tsx` | groups via `arrangeRepositories`, headers via `renderRepositorySectionHeader`, group items prepended to the context menu, layout subscription |
+| `app/src/ui/lib/filter-list.tsx`, `section-filter-list.tsx` | `IFilterListGroup.showWhenEmpty`: a header without rows (collapsed or empty group) |
+| `app/src/models/popup.ts`, `app/src/ui/app.tsx` | `PopupType.RepositoryGroupName` and its dialog |
 | `app/src/main-process/app-window.ts` | calls `repairWindowStateFile()` before `windowStateKeeper` |
 
 ## PDF previews in diffs
@@ -226,6 +229,50 @@ CLI only supported macOS and Windows. `script/linux-kur.sh` installs the
 Shared helpers (entries, path matching, formatting) are in
 `lib/repository-list-file.ts`; tests in
 `app/test/unit/repository-list-file-test.ts`.
+
+## Repository groups
+
+The repository list can be arranged by the user: their own groups, a Hidden
+section, collapsible sections and a switch for the Recent group. Repositories
+the user hasn't placed stay in upstream's owner groups.
+
+**Layout file.** `repository-groups.json` in the user data directory holds
+the groups (in display order, each a list of repository paths), the hidden
+paths, the collapsed section keys and `showRecent`. Paths identify
+repositories because the CLI knows paths but not the app's database ids.
+`lib/repository-groups.ts` has the model: pure operations (create, rename,
+move, delete, assign, hide, collapse) that throw `RepositoryGroupsError` on a
+bad name, and a tolerant parser that drops malformed parts, since people and
+agents may edit the file by hand.
+
+**In the app.** `ui/lib/repository-groups-store.ts` reads the file, watches
+its directory (the file is replaced by rename) and reloads on change; UI
+changes are written back the same way. `arrangeRepositories`
+(`ui/repositories-list/arrange-repositories.ts`) runs upstream's
+`groupRepositories` and rearranges the result: Recent (without hidden
+repositories, left out when turned off), the user's groups, owner groups with
+the placed repositories taken out, Hidden. A collapsed section keeps its
+header (with a count) and loses its rows, except while the filter has text,
+so searching still finds everything. Empty user groups still show their
+header.
+
+**Controls** (`repository-groups-menu.tsx`). A section header is a button:
+click collapses it, right click offers Collapse/Expand, and for user groups
+Rename…, Move up/down and Delete group, plus New group… and the Recent group
+switch everywhere. A repository's context menu gets Move to group (the
+groups, New group…, Remove from group) and Hide/Unhide.
+`repository-group-name-dialog.tsx` names new groups and renames them,
+refusing a name already in use (case-insensitive).
+
+**CLI** (`cli/repository-groups.ts`): `github group list|create|add|remove|
+rename|delete|move|collapse|expand`, `github hide|unhide` and
+`github recent on|off` edit the file directly, so the app doesn't need to
+run; an open app picks the change up. Repository paths are resolved against
+`repositories.json`, so a path inside a repository works and one outside the
+app's list is refused. `github group list --json` also lists the ungrouped
+repositories.
+
+Styles: `_repository-groups.scss`. Tests: `app/test/unit/repository-groups-test.ts`.
 
 ## Window size on Wayland
 

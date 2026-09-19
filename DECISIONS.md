@@ -3,6 +3,17 @@
 Why the fork is built the way it is. Newest first. How things work today is in
 `ARCHITECTURE.md`.
 
+## 2026-09-19: Repository groups in a file next to upstream's owner groups
+
+The maintainer wanted to arrange the list by hand and have agents do it too.
+The layout lives in its own JSON file rather than the app's database so the
+`github group` commands can change it without the app running, and the open
+app follows the file. Ungrouped repositories stay grouped by owner, as the
+maintainer chose, instead of falling into one "Other" group; upstream's
+grouping runs unchanged and the fork rearranges its output, which keeps the
+merge surface in `group-repositories.ts` at zero. Hiding is a section rather
+than removal so a hidden repository is still one search away.
+
 ## 2026-09-19: Repository list through the `github` CLI, not an MCP server
 
 Coding agents already drive `git` and `gh` from a shell, so the app's

@@ -9,7 +9,7 @@ import {
 } from '../lib/repository-list-file'
 
 /** Electron's `userData` directory, which the CLI can't ask the app for. */
-function getUserDataPath() {
+export function getUserDataPath() {
   const name = `GitHub Desktop${__DEV__ ? '-dev' : ''}`
   if (process.platform === 'darwin') {
     return join(homedir(), 'Library', 'Application Support', name)

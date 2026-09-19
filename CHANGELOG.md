@@ -19,6 +19,13 @@ notes are in `changelog.json` and on
   `.md`, `.txt` and `.rst` files shows the same diff with its text translated
   line for line. Documents already in Turkish get no switch. Uses DeepSeek, OpenRouter or the local Claude CLI,
   set up in the new Options → AI tab.
+- Repository groups: arrange the repository list into your own groups
+  (right click a repository → Move to group), reorder and rename them from
+  the group header's menu, collapse any section by clicking its header, hide
+  repositories into a Hidden section, and turn the Recent group off.
+  Everything can also be done with `github group …`, `github hide` and
+  `github recent`, which work while the app is closed. Repositories you
+  don't group stay grouped by owner.
 - `github list [--json]`, `github add <path>` and `github remove <path>` on the
   command line: list the app's repositories, add one without the dialog, or
   take one out of the app (the folder stays on disk). Useful for scripts and

@@ -36,6 +36,9 @@ export interface IFilterListGroup<
 
   /** The items in the group. */
   readonly items: ReadonlyArray<Item>
+
+  /** Show the header even when no items are shown (a collapsed group). */
+  readonly showWhenEmpty?: boolean
 }
 
 interface IFlattenedGroup<T> {

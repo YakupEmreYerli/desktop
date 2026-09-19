@@ -6,6 +6,7 @@ import {
   readRepositoryList,
   waitForRepositoryList,
 } from './repository-list'
+import { GroupUsage, runGroupCommand } from './repository-groups'
 import {
   findRepositoryListEntry,
   formatRepositoryList,
@@ -48,6 +49,7 @@ const run = (...args: Array<string>) => {
 const args = parse(process.argv.slice(2), {
   alias: { help: 'h', branch: 'b' },
   boolean: ['help', 'json'],
+  string: ['_'],
 })
 
 const usage = (exitCode = 1): never => {
@@ -61,7 +63,8 @@ const usage = (exitCode = 1): never => {
       '  github list [--json]              List the repositories in the app\n' +
       '  github add [path]                 Add a repository without a dialog\n' +
       '  github remove [path]              Remove a repository from the app;\n' +
-      '                                    its folder stays on disk\n'
+      '                                    its folder stays on disk\n' +
+      GroupUsage
   )
   process.exit(exitCode)
 }
@@ -122,6 +125,12 @@ if (args.help || args._.at(0) === 'help') {
   addRepository(resolve(args._.at(1) ?? '.'))
 } else if (args._.at(0) === 'remove') {
   removeRepository(resolve(args._.at(1) ?? '.'))
+} else if (['group', 'hide', 'unhide', 'recent'].includes(args._.at(0) ?? '')) {
+  runGroupCommand(args._[0], args._.slice(1), args.json).then(ok => {
+    if (!ok) {
+      usage(1)
+    }
+  })
 } else if (args._.at(0) === 'clone') {
   const urlArg = args._.at(1)
   // Assume name with owner slug if it looks like it

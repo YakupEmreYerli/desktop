@@ -1,14 +1,18 @@
 import * as React from 'react'
 
 import { commitGrammar, RepositoryListItem } from './repository-list-item'
+import { IRepositoryListItem, Repositoryish } from './group-repositories'
 import {
-  groupRepositories,
-  IRepositoryListItem,
-  Repositoryish,
-  RepositoryListGroup,
-  getGroupKey,
-} from './group-repositories'
-import { IFilterListGroup } from '../lib/filter-list'
+  arrangeRepositories,
+  IRepositorySectionHeader,
+  RepositoryListSection,
+} from './arrange-repositories'
+import {
+  buildRepositoryGroupMenuItems,
+  renderRepositorySectionHeader,
+} from './repository-groups-menu'
+import { repositoryGroupsStore } from '../lib/repository-groups-store'
+import { IRepositoryGroupsLayout } from '../../lib/repository-groups'
 import { IMatches } from '../../lib/fuzzy-find'
 import { ILocalRepositoryState, Repository } from '../../models/repository'
 import { Dispatcher } from '../dispatcher'
@@ -19,13 +23,11 @@ import { showContextualMenu } from '../../lib/menu-item'
 import { IMenuItem } from '../../lib/menu-item'
 import { PopupType } from '../../models/popup'
 import { encodePathAsUrl } from '../../lib/path'
-import { TooltippedContent } from '../lib/tooltipped-content'
 import memoizeOne from 'memoize-one'
 import { KeyboardShortcut } from '../keyboard-shortcut/keyboard-shortcut'
 import { generateRepositoryListContextMenu } from '../repositories-list/repository-list-item-context-menu'
 import { enableWorktreeSupport } from '../../lib/feature-flag'
 import { SectionFilterList } from '../lib/section-filter-list'
-import { assertNever } from '../../lib/fatal-error'
 import { IAheadBehind } from '../../models/branch'
 
 const BlankSlateImage = encodePathAsUrl(__dirname, 'static/empty-no-repo.svg')
@@ -80,6 +82,7 @@ interface IRepositoriesListProps {
 interface IRepositoriesListState {
   readonly newRepositoryMenuExpanded: boolean
   readonly selectedItem: IRepositoryListItem | null
+  readonly groupsLayout: IRepositoryGroupsLayout
 }
 
 const RowHeight = 29
@@ -89,9 +92,7 @@ const RowHeight = 29
  * the id of the provided repository.
  */
 function findMatchingListItem(
-  groups: ReadonlyArray<
-    IFilterListGroup<IRepositoryListItem, RepositoryListGroup>
-  >,
+  groups: ReadonlyArray<RepositoryListSection>,
   selectedRepository: Repositoryish | null
 ) {
   if (selectedRepository !== null) {
@@ -122,14 +123,18 @@ export class RepositoriesList extends React.Component<
     (
       repositories: ReadonlyArray<Repositoryish> | null,
       localRepositoryStateLookup: ReadonlyMap<number, ILocalRepositoryState>,
-      recentRepositories: ReadonlyArray<number>
+      recentRepositories: ReadonlyArray<number>,
+      layout: IRepositoryGroupsLayout,
+      filtering: boolean
     ) =>
       repositories === null
         ? []
-        : groupRepositories(
+        : arrangeRepositories(
             repositories,
             localRepositoryStateLookup,
-            recentRepositories
+            recentRepositories,
+            layout,
+            filtering
           )
   )
 
@@ -144,13 +149,26 @@ export class RepositoriesList extends React.Component<
    */
   private getSelectedListItem = memoizeOne(findMatchingListItem)
 
+  private unsubscribeFromGroups: (() => void) | null = null
+
   public constructor(props: IRepositoriesListProps) {
     super(props)
 
     this.state = {
       newRepositoryMenuExpanded: false,
       selectedItem: null,
+      groupsLayout: repositoryGroupsStore.getLayout(),
     }
+  }
+
+  public componentDidMount() {
+    this.unsubscribeFromGroups = repositoryGroupsStore.subscribe(groupsLayout =>
+      this.setState({ groupsLayout })
+    )
+  }
+
+  public componentWillUnmount() {
+    this.unsubscribeFromGroups?.()
   }
 
   private renderItem = (item: IRepositoryListItem, matches: IMatches) => {
@@ -240,36 +258,8 @@ export class RepositoriesList extends React.Component<
     )
   }
 
-  private getGroupLabel(group: RepositoryListGroup) {
-    const { kind } = group
-    if (kind === 'enterprise') {
-      return group.host
-    } else if (kind === 'other') {
-      return 'Other'
-    } else if (kind === 'dotcom') {
-      return group.owner.login
-    } else if (kind === 'recent') {
-      return 'Recent'
-    } else {
-      assertNever(kind, `Unknown repository group kind ${kind}`)
-    }
-  }
-
-  private renderGroupHeader = (group: RepositoryListGroup) => {
-    const label = this.getGroupLabel(group)
-
-    return (
-      <TooltippedContent
-        key={getGroupKey(group)}
-        className="filter-list-group-header"
-        tooltip={label}
-        onlyWhenOverflowed={true}
-        tagName="div"
-      >
-        {label}
-      </TooltippedContent>
-    )
-  }
+  private renderGroupHeader = (header: IRepositorySectionHeader) =>
+    renderRepositorySectionHeader(header, this.props.dispatcher)
 
   private onItemClick = (item: IRepositoryListItem) => {
     const hasIndicator =
@@ -287,45 +277,45 @@ export class RepositoriesList extends React.Component<
   ) => {
     event.preventDefault()
 
-    const items = generateRepositoryListContextMenu({
-      onRemoveRepository: this.props.onRemoveRepository,
-      onShowRepository: this.props.onShowRepository,
-      onOpenInShell: this.props.onOpenInShell,
-      onOpenInExternalEditor: this.props.onOpenInExternalEditor,
-      askForConfirmationOnRemoveRepository:
-        this.props.askForConfirmationOnRemoveRepository,
-      externalEditorLabel: this.props.externalEditorLabel,
-      onChangeRepositoryAlias: this.onChangeRepositoryAlias,
-      onRemoveRepositoryAlias: this.onRemoveRepositoryAlias,
-      onViewOnGitHub: this.props.onViewOnGitHub,
-      onCreateWorktree: enableWorktreeSupport()
-        ? this.onCreateWorktree
-        : undefined,
-      onShowWorktrees: enableWorktreeSupport()
-        ? this.onShowWorktrees
-        : undefined,
-      repository: item.repository,
-      shellLabel: this.props.shellLabel,
-    })
+    const items = [
+      ...buildRepositoryGroupMenuItems(item.repository, this.props.dispatcher),
+      ...generateRepositoryListContextMenu({
+        onRemoveRepository: this.props.onRemoveRepository,
+        onShowRepository: this.props.onShowRepository,
+        onOpenInShell: this.props.onOpenInShell,
+        onOpenInExternalEditor: this.props.onOpenInExternalEditor,
+        askForConfirmationOnRemoveRepository:
+          this.props.askForConfirmationOnRemoveRepository,
+        externalEditorLabel: this.props.externalEditorLabel,
+        onChangeRepositoryAlias: this.onChangeRepositoryAlias,
+        onRemoveRepositoryAlias: this.onRemoveRepositoryAlias,
+        onViewOnGitHub: this.props.onViewOnGitHub,
+        onCreateWorktree: enableWorktreeSupport()
+          ? this.onCreateWorktree
+          : undefined,
+        onShowWorktrees: enableWorktreeSupport()
+          ? this.onShowWorktrees
+          : undefined,
+        repository: item.repository,
+        shellLabel: this.props.shellLabel,
+      }),
+    ]
 
     showContextualMenu(items)
   }
 
   private getItemAriaLabel = (item: IRepositoryListItem) => item.repository.name
   private getGroupAriaLabelGetter =
-    (
-      groups: ReadonlyArray<
-        IFilterListGroup<IRepositoryListItem, RepositoryListGroup>
-      >
-    ) =>
-    (group: number) =>
-      this.getGroupLabel(groups[group].identifier)
+    (groups: ReadonlyArray<RepositoryListSection>) => (group: number) =>
+      groups[group].identifier.label
 
   public render() {
     const groups = this.getRepositoryGroups(
       this.props.repositories,
       this.props.localRepositoryStateLookup,
-      this.props.recentRepositories
+      this.props.recentRepositories,
+      this.state.groupsLayout,
+      this.props.filterText.length > 0
     )
 
     // So there's two types of selection at play here. There's the repository
@@ -339,7 +329,7 @@ export class RepositoriesList extends React.Component<
 
     return (
       <div className="repository-list">
-        <SectionFilterList<IRepositoryListItem, RepositoryListGroup>
+        <SectionFilterList<IRepositoryListItem, IRepositorySectionHeader>
           rowHeight={RowHeight}
           selectedItem={selectedItem}
           filterText={this.props.filterText}
@@ -354,6 +344,7 @@ export class RepositoriesList extends React.Component<
           invalidationProps={{
             repositories: this.props.repositories,
             filterText: this.props.filterText,
+            groupsLayout: this.state.groupsLayout,
           }}
           onItemContextMenu={this.onItemContextMenu}
           getGroupAriaLabel={this.getGroupAriaLabelGetter(groups)}

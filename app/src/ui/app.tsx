@@ -145,6 +145,7 @@ import { CommitDragElement } from './drag-elements/commit-drag-element'
 import classNames from 'classnames'
 import { MoveToApplicationsFolder } from './move-to-applications-folder'
 import { ChangeRepositoryAlias } from './change-repository-alias/change-repository-alias-dialog'
+import { RepositoryGroupNameDialog } from './repositories-list/repository-group-name-dialog'
 import { ThankYou } from './thank-you'
 import {
   getUserContributions,
@@ -2804,6 +2805,15 @@ export class App extends React.Component<IAppProps, IAppState> {
             onDismissed={onPopupDismissedFn}
             onShowAcknowledgements={this.showAcknowledgements}
             onShowTermsAndConditions={this.showTermsAndConditions}
+          />
+        )
+      case PopupType.RepositoryGroupName:
+        return (
+          <RepositoryGroupNameDialog
+            key="repository-group-name"
+            groupName={popup.groupName}
+            repositoryPath={popup.repositoryPath}
+            onDismissed={onPopupDismissedFn}
           />
         )
       case PopupType.TestCLIAction:

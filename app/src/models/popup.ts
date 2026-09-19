@@ -104,6 +104,7 @@ export enum PopupType {
   ConfirmCommitFilteredChanges = 'ConfirmCommitFilteredChanges',
   TestAbout = 'TestAbout',
   TestCLIAction = 'TestCLIAction',
+  RepositoryGroupName = 'RepositoryGroupName',
   TestCopilotSnapshotCard = 'TestCopilotSnapshotCard',
   PushProtectionError = 'PushProtectionError',
   BypassPushProtection = 'BypassPushProtection',
@@ -480,6 +481,11 @@ export type PopupDetail =
     }
   | {
       type: PopupType.TestCLIAction
+    }
+  | {
+      type: PopupType.RepositoryGroupName
+      groupName: string | null
+      repositoryPath: string | null
     }
   | {
       type: PopupType.TestCopilotSnapshotCard
