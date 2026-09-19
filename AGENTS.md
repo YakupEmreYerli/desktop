@@ -20,6 +20,8 @@ yarn build:dev && yarn start        # development app
 yarn lint                           # prettier + eslint
 yarn test:unit                      # all unit tests (node:test)
 node script/test.mjs <file>         # a single test file
+npx playwright test --config app/test/e2e/playwright.config.ts <name>
+                                    # e2e against the packaged app in dist/
 script/linux-kur.sh                 # production build + install for this user
 ```
 

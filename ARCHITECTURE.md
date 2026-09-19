@@ -180,7 +180,9 @@ the view shows a button to Options → AI, and it starts by itself once one is
 set up (`onAISettingsChanged`).
 
 Styles: `_translation-diff.scss`, `_ai-preferences.scss`, `_view-switch.scss`.
-Tests: `app/test/unit/ai-translate-test.ts`.
+Tests: `app/test/unit/ai-translate-test.ts`; `app/test/e2e/translation.e2e.ts`
+translates a document through the local `claude` CLI (skipped without it) and
+checks every source line has a translated line of sensible length.
 
 ## Changes filter popover
 
@@ -228,7 +230,8 @@ CLI only supported macOS and Windows. `script/linux-kur.sh` installs the
 
 Shared helpers (entries, path matching, formatting) are in
 `lib/repository-list-file.ts`; tests in
-`app/test/unit/repository-list-file-test.ts`.
+`app/test/unit/repository-list-file-test.ts` and, end to end against the
+packaged app, `app/test/e2e/repository-list.e2e.ts`.
 
 ## Repository groups
 
@@ -272,7 +275,11 @@ run; an open app picks the change up. Repository paths are resolved against
 app's list is refused. `github group list --json` also lists the ungrouped
 repositories.
 
-Styles: `_repository-groups.scss`. Tests: `app/test/unit/repository-groups-test.ts`.
+Styles: `_repository-groups.scss`. Tests: `app/test/unit/repository-groups-test.ts`;
+`app/test/e2e/repository-list.e2e.ts` drives the packaged app with its own
+`XDG_CONFIG_HOME`, runs the real CLI next to it, and replaces the main
+process's `Menu.popup` with a recorder so the tests can click context menu
+items.
 
 ## Window size on Wayland
 
