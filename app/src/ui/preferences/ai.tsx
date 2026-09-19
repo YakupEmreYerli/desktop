@@ -240,9 +240,7 @@ class TaskSettings extends React.Component<
           </Select>
         </div>
         {provider !== null && this.renderModel(provider)}
-        {provider !== null &&
-          task === 'commit-message' &&
-          this.renderCommitMessageSettings()}
+        {task === 'commit-message' && this.renderCommitMessageSettings()}
       </section>
     )
   }

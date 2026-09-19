@@ -180,8 +180,8 @@ parent) and `_setCommitMessage`. Nothing is committed.
 
 `lib/ai/commit-message.ts` builds the instructions from two settings, kept
 in local storage (`ai-commit-message-language`, `-other-language`,
-`-style`, `-custom-style`) and shown in Options → AI once the feature has a
-provider:
+`-style`, `-custom-style`) and shown in Options → AI under the feature's
+provider and model:
 
 - **Language:** Turkish (default, imperative, correct Turkish letters),
   English, or Other with a free-text name. The model is told to write in

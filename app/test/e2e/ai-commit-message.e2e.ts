@@ -164,8 +164,9 @@ test('each feature has its own provider; the old setting goes to translation', a
 
   await expect(translation.getByLabel('Provider')).toHaveValue('claude')
   await expect(commit.getByLabel('Provider')).toHaveValue('none')
-  // Language and style only show once the feature has a provider
-  await expect(commit.getByLabel('Language')).toHaveCount(0)
+  // Language and style can be set before a provider is picked
+  await expect(commit.getByLabel('Language')).toHaveValue('turkish')
+  await expect(commit.getByLabel('Style')).toHaveValue('plain')
 
   await commit.getByLabel('Provider').selectOption('deepseek')
   await expect(commit.getByLabel('Model')).toHaveValue('deepseek-flash')
