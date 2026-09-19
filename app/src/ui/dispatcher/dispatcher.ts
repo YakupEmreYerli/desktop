@@ -131,6 +131,10 @@ import { SignInResult } from '../../lib/stores/sign-in-store'
 import { ICustomIntegration } from '../../lib/custom-integration'
 import { isAbsolute } from 'path'
 import { CLIAction } from '../../lib/cli-action'
+import {
+  dispatchRepositoryListAction,
+  isRepositoryListAction,
+} from '../lib/repository-list-sync'
 import { BypassReasonType } from '../secret-scanning/bypass-push-protection-dialog'
 import {
   IConflictResolutionProgress,
@@ -2049,7 +2053,10 @@ export class Dispatcher {
   }
 
   public async dispatchCLIAction(action: CLIAction) {
-    if (action.kind === 'clone-url') {
+    if (isRepositoryListAction(action)) {
+      const { repositories } = this.appStore.getState()
+      await dispatchRepositoryListAction(this, repositories, action)
+    } else if (action.kind === 'clone-url') {
       const { branch, url } = action
 
       if (branch) {

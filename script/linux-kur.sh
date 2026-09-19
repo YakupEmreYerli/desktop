@@ -12,6 +12,7 @@ kok="$(cd "$(dirname "$0")/.." && pwd)"
 kaynak="$kok/dist/desktop-linux-x64"
 hedef="$HOME/.local/opt/github-desktop"
 bin="$HOME/.local/bin/github-desktop"
+cli="$HOME/.local/bin/github"
 masaustu="$HOME/.local/share/applications/github-desktop.desktop"
 
 if [[ "${1:-}" != "--derleme" ]]; then
@@ -44,6 +45,13 @@ cat >"$bin" <<EOF
 exec "$hedef/desktop" "\$@"
 EOF
 chmod +x "$bin"
+
+# Komut satırı aracı: github list / add / remove / open / clone
+cat >"$cli" <<EOF
+#!/bin/sh
+ELECTRON_RUN_AS_NODE=1 exec "$hedef/desktop" "$hedef/resources/app/cli.js" "\$@"
+EOF
+chmod +x "$cli"
 
 simge="$hedef/github-desktop.png"
 cp "$kok/app/static/linux/icon-logo.png" "$simge"

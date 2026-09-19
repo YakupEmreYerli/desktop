@@ -21,6 +21,7 @@ Resmî bir GitHub ürünü değildir. Resmî uygulama için
 | **Diff'te HTML önizleme** | HTML dosyaları sayfa olarak açılır; değişen dosyada eski ve yeni hâl yan yana durur, Önizleme/Kod düğmesiyle kod farkına geçilir. Yerel CSS, resim ve script'ler yüklenir; script'ler kafeste çalışır. |
 | **Belgelerin Türkçe çevirisi** | Markdown ve metin dosyalarında Kod / Türkçe düğmesi dosyayı Türkçe'ye çevrilmiş gösterir, değişen paragraflar işaretlidir. DeepSeek, OpenRouter ya da Claude aboneliğinle çalışır (Seçenekler → AI). |
 | **Derli toplu değişiklik filtresi** | Filtre seçeneklerinde sayı rozetleri ve tam genişlik satırlar var; birden fazla filtre seçerken pencere açık kalır. |
+| **Komut satırından depo listesi** | `github list`, `github add` ve `github remove` uygulamadaki depoları pencere açmadan listeler, ekler ve çıkarır; betikler ve yapay zekâ ajanları da listeyi yönetebilir. Çıkarmak diskteki klasöre dokunmaz. |
 | **Kullanıcıya Linux kurulumu** | Tek betik uygulamayı derleyip ev klasörüne kurar, sudo istemez, mevcut GitHub Desktop ayarlarını ve oturumu korur. |
 
 Tam liste (İngilizce): [CHANGELOG.md](../CHANGELOG.md).
@@ -40,7 +41,7 @@ script/linux-kur.sh
 ```
 
 Betik uygulamayı `~/.local/opt/github-desktop` klasörüne kurar, menüye ekler
-ve `github-desktop` komutunu oluşturur. Güncellemek için tekrar çalıştırın.
+ve `github-desktop` ile `github` komutlarını oluşturur (`github --help`). Güncellemek için tekrar çalıştırın.
 Uygulama açıkken çalışmaz, önce kapatın. Sistemde kurulu bir GitHub Desktop
 paketi varsa bu kurulum onun önüne geçer; paketi sonra kaldırabilirsiniz.
 

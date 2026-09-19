@@ -8,3 +8,7 @@ export type CLIAction =
       readonly url: string
       readonly branch?: string
     }
+  | {
+      readonly kind: 'add-repository' | 'remove-repository'
+      readonly path: string
+    }

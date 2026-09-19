@@ -281,7 +281,11 @@ async function handleCommandLineArguments(argv: string[]) {
     return
   }
 
-  if (typeof args['cli-open'] === 'string') {
+  if (typeof args['cli-add'] === 'string') {
+    sendCLIAction({ kind: 'add-repository', path: args['cli-add'] })
+  } else if (typeof args['cli-remove'] === 'string') {
+    sendCLIAction({ kind: 'remove-repository', path: args['cli-remove'] })
+  } else if (typeof args['cli-open'] === 'string') {
     handleCLIAction({ kind: 'open-repository', path: args['cli-open'] })
   } else if (typeof args['cli-clone'] === 'string') {
     handleCLIAction({
@@ -293,6 +297,11 @@ async function handleCommandLineArguments(argv: string[]) {
   }
 
   return
+}
+
+/** Like `handleCLIAction`, without bringing the window forward. */
+function sendCLIAction(action: CLIAction) {
+  onDidLoad(window => window.sendCLIAction(action))
 }
 
 function handleCLIAction(action: CLIAction) {

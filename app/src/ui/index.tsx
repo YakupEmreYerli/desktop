@@ -1,6 +1,7 @@
 import '../lib/logging/renderer/install'
 
 import { registerAISettingsOpener } from '../lib/ai/settings-link'
+import { syncRepositoryListFile } from './lib/repository-list-sync'
 import * as React from 'react'
 import * as ReactDOM from 'react-dom'
 import * as Path from 'path'
@@ -345,6 +346,7 @@ dispatcher.registerErrorHandler(pushNeedsPullHandler)
 dispatcher.registerErrorHandler(samlReauthRequired)
 dispatcher.registerErrorHandler(backgroundTaskHandler)
 registerAISettingsOpener(dispatcher)
+syncRepositoryListFile(appStore)
 dispatcher.registerErrorHandler(missingRepositoryHandler)
 dispatcher.registerErrorHandler(localChangesOverwrittenHandler)
 dispatcher.registerErrorHandler(rebaseConflictsHandler)

@@ -23,6 +23,12 @@ conflicts.
 | `app/styles/ui/_changes.scss` | imports `changes/filter-popover` |
 | `app/src/ui/changes/changes-list-filter-options.tsx` | options rendered through `renderOption`, popover stays open on toggle |
 | `app/package.json`, `app/yarn.lock` | `pdfjs-dist` dependency |
+| `app/src/lib/cli-action.ts` | `add-repository` and `remove-repository` action kinds |
+| `app/src/cli/main.ts` | `list`, `add`, `remove` subcommands; `run` starts the app on Linux |
+| `app/src/main-process/main.ts` | `--cli-add` / `--cli-remove` sent as CLI actions without focusing the window |
+| `app/src/ui/dispatcher/dispatcher.ts` | `dispatchCLIAction` hands add/remove to `dispatchRepositoryListAction` |
+| `app/src/ui/index.tsx` | `syncRepositoryListFile(appStore)` |
+| `app/src/ui/cli-action/test-cli-action-dialog.tsx` | tab kinds narrowed to open/clone |
 | `app/src/main-process/app-window.ts` | calls `repairWindowStateFile()` before `windowStateKeeper` |
 
 ## PDF previews in diffs
@@ -182,6 +188,43 @@ how many files would remain if that filter were added. Styles in
 `app/styles/ui/changes/_filter-popover.scss` override upstream's popover rules
 in `_changes-list.scss`.
 
+## Repository list on the command line
+
+The `github` command line tool (`app/src/cli/main.ts`, run with
+`ELECTRON_RUN_AS_NODE` from the app's own binary) gets three subcommands for
+scripts and coding agents:
+
+- `github list [--json]` prints the app's repositories: name (alias if set),
+  path, `owner/name` on GitHub, and whether the folder is missing.
+- `github add [path]` adds the repository containing `path` without the Add
+  dialog. It checks with `git rev-parse` first and fails on a folder that
+  isn't a repository.
+- `github remove [path]` takes the repository containing `path` out of the
+  app. The folder is never moved to the trash.
+
+The list lives in the app's IndexedDB, which another process can't read, so
+the renderer mirrors it into `repositories.json` in the user data directory
+(`ui/lib/repository-list-sync.ts`, written through a temporary file and
+rename). An empty list is written only after a non-empty one this session, so
+the empty state before the database loads never overwrites the file. The CLI
+works out the user data directory itself (`cli/repository-list.ts`), because
+it can't ask the app.
+
+`add` and `remove` start the app, or hand the arguments to the running one,
+with `--cli-add` / `--cli-remove`. The main process forwards them as CLI
+actions without raising the window. The dispatcher adds through
+`addRepositories` or removes through `removeRepository(…, false)`. There's no
+reply channel back to the CLI, so the CLI polls `repositories.json` until the
+change shows up (up to 30 s) and reports the result with an exit code.
+
+On Linux `run` spawns `process.execPath`, the app binary itself. Upstream's
+CLI only supported macOS and Windows. `script/linux-kur.sh` installs the
+`~/.local/bin/github` wrapper.
+
+Shared helpers (entries, path matching, formatting) are in
+`lib/repository-list-file.ts`; tests in
+`app/test/unit/repository-list-file-test.ts`.
+
 ## Window size on Wayland
 
 Under Wayland, Electron can't read a window's position, so
@@ -197,7 +240,8 @@ Linux only.
 
 `script/linux-kur.sh` runs `yarn build:prod` (skip it with `--derleme`) and
 copies `dist/desktop-linux-x64` into `~/.local/opt/github-desktop`. It then
-writes the `~/.local/bin/github-desktop` launcher and a
+writes the `~/.local/bin/github-desktop` launcher, the `~/.local/bin/github` command
+line tool and a
 `~/.local/share/applications/github-desktop.desktop` entry. The entry has the
 same name as a system package's, so it takes precedence, and it handles the
 `x-github-client` and `x-github-desktop-auth` links. The product name stays

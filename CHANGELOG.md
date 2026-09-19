@@ -19,6 +19,11 @@ notes are in `changelog.json` and on
   `.md`, `.txt` and `.rst` files shows the same diff with its text translated
   line for line. Documents already in Turkish get no switch. Uses DeepSeek, OpenRouter or the local Claude CLI,
   set up in the new Options → AI tab.
+- `github list [--json]`, `github add <path>` and `github remove <path>` on the
+  command line: list the app's repositories, add one without the dialog, or
+  take one out of the app (the folder stays on disk). Useful for scripts and
+  coding agents. The `github` command now works on Linux and is installed by
+  `script/linux-kur.sh`.
 - `script/linux-kur.sh` builds and installs the fork for the current user on
   Linux, keeping existing GitHub Desktop settings and sign-in.
 - Linux CI for the fork (lint, unit tests, production build).

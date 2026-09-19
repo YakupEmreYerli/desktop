@@ -32,6 +32,7 @@ This is not an official GitHub product. For the official app see
 | **HTML previews in diffs** | HTML files open as rendered pages, old and new side by side when modified, with a Preview/Code switch. Local stylesheets, images and scripts load; scripts run sandboxed. |
 | **Turkish translation of documents** | Markdown and text files get a Code / Türkçe switch that shows the file translated into Turkish, changed paragraphs highlighted. Works with DeepSeek, OpenRouter or your Claude subscription (Options → AI). |
 | **Tidier changes filter** | Filter options have count badges and full-width rows, and the popover stays open while you pick several filters. |
+| **Repository list from the command line** | `github list`, `github add` and `github remove` show and change the app's repositories without a dialog, so scripts and coding agents can manage them. Removing never touches the folder on disk. |
 | **Per-user Linux install** | One script builds and installs the app into your home directory, no sudo, keeping existing GitHub Desktop settings and sign-in. |
 
 Full list: [CHANGELOG.md](../CHANGELOG.md).
@@ -51,7 +52,7 @@ script/linux-kur.sh
 ```
 
 The script installs to `~/.local/opt/github-desktop` and adds a menu entry and
-a `github-desktop` command. Run it again to update. Close the app first; it
+the `github-desktop` and `github` commands (`github --help`). Run it again to update. Close the app first; it
 refuses to overwrite a running copy. If a GitHub Desktop package is installed
 system-wide, this install takes precedence; you can remove the package
 afterwards.

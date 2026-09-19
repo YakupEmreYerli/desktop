@@ -3,6 +3,18 @@
 Why the fork is built the way it is. Newest first. How things work today is in
 `ARCHITECTURE.md`.
 
+## 2026-09-19: Repository list through the `github` CLI, not an MCP server
+
+Coding agents already drive `git` and `gh` from a shell, so the app's
+repository list is managed the same way: new `list`, `add` and `remove`
+subcommands on upstream's existing `github` tool. An MCP server inside the app
+was considered and dropped. It would be one more protocol, port and setting to
+secure, for something a command covers. The list is mirrored to a JSON file
+rather than queried live because the CLI has no channel back from the app;
+`add` and `remove` wait for that file to change so they can report success.
+Removing never moves the folder to the trash; a tool an agent can run
+shouldn't be able to delete work.
+
 ## 2026-09-18: Translation through three providers, one module
 
 DeepSeek and OpenRouter are cheap, pay-per-use APIs (OpenRouter reaches
