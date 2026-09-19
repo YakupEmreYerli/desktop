@@ -357,3 +357,30 @@ test('clicking again while writing stops it', async () => {
   await expect(summary()).toHaveValue('')
   await expect(page.locator('#app-error')).toHaveCount(0)
 })
+
+test('the AI tab fits a short window and scrolls', async () => {
+  await app.evaluate(({ BrowserWindow }) => {
+    BrowserWindow.getAllWindows()[0].setSize(1000, 700)
+  })
+  await page.waitForTimeout(500)
+  const dialog = await openAIOptions()
+
+  const viewport = await page.evaluate(() => window.innerHeight)
+  const box = await dialog.boundingBox()
+  expect(box).not.toBeNull()
+  expect(box!.y + box!.height).toBeLessThanOrEqual(viewport)
+  await expect(
+    dialog.getByRole('button', { name: 'Save', exact: true })
+  ).toBeInViewport()
+
+  const tab = dialog.locator('.dialog-content.ai-tab')
+  const { scrollHeight, clientHeight } = await tab.evaluate(el => ({
+    scrollHeight: el.scrollHeight,
+    clientHeight: el.clientHeight,
+  }))
+  expect(scrollHeight).toBeGreaterThan(clientHeight)
+  const style = dialog.getByLabel('Style')
+  await style.scrollIntoViewIfNeeded()
+  await expect(style).toBeInViewport()
+  await closeOptions()
+})

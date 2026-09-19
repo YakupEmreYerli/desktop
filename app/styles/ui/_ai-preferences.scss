@@ -1,5 +1,13 @@
 // Options → AI, see app/src/ui/preferences/ai.tsx.
 
+// The tab is taller than the others, so it scrolls inside a fixed height
+// like upstream's Copilot tab instead of stretching the dialog past the
+// window. Short windows get less.
+#preferences .dialog-content.ai-tab {
+  max-height: min(440px, calc(100vh - 230px));
+  overflow-y: auto;
+}
+
 #preferences .ai-preferences {
   h2 + .settings-description {
     margin-top: 0;

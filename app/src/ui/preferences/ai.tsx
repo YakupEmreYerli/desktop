@@ -508,7 +508,7 @@ class ProviderSettings extends React.Component<
 export class AIPreferences extends React.Component {
   public render() {
     return (
-      <DialogContent>
+      <DialogContent className="ai-tab">
         <div className="ai-preferences">
           <h2>Features</h2>
           <p className="settings-description">
