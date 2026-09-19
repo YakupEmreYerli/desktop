@@ -166,7 +166,7 @@ test('each feature has its own provider; the old setting goes to translation', a
   await expect(commit.getByLabel('Provider')).toHaveValue('none')
   // Language and style can be set before a provider is picked
   await expect(commit.getByLabel('Language')).toHaveValue('turkish')
-  await expect(commit.getByLabel('Style')).toHaveValue('plain')
+  await expect(commit.getByLabel('Style')).toHaveValue('repository')
 
   await commit.getByLabel('Provider').selectOption('deepseek')
   await expect(commit.getByLabel('Model')).toHaveValue('deepseek-flash')
@@ -174,7 +174,7 @@ test('each feature has its own provider; the old setting goes to translation', a
   await commit.locator('.ai-model-suggestion', { hasText: 'haiku' }).click()
   await expect(commit.getByLabel('Model')).toHaveValue('haiku')
   await expect(commit.getByLabel('Language')).toHaveValue('turkish')
-  await expect(commit.getByLabel('Style')).toHaveValue('plain')
+  await expect(commit.getByLabel('Style')).toHaveValue('repository')
 
   // Translation kept its own choice
   await expect(translation.getByLabel('Provider')).toHaveValue('claude')

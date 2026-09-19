@@ -190,11 +190,16 @@ provider and model:
 - **Style:** Plain (title of at most 72 characters without a type prefix or
   period), Conventional Commits (`type(scope): summary`, the type in English
   whatever the language, `!` and `BREAKING CHANGE:` for breaking changes),
-  Gitmoji (one emoji from a fixed list first), the repository's history (the
-  last 12 non-merge messages of the branch, `git log --format=%B`, each cut
-  to 800 characters, as examples; plain when there are none), or Custom
-  (the user's rules, which take precedence over the plain rules; plain when
-  empty).
+  Gitmoji (one emoji from a fixed list first), the repository's history, or
+  Custom (the user's rules, which take precedence over the plain rules;
+  plain when empty).
+- **The repository's history** is the default. The last 12 non-merge
+  messages of the branch (`git log --format=%B`, each cut to 800
+  characters) are the examples, and they decide everything but the
+  language: prefix or area label, grammatical form (a history in the past
+  tense stays in it, whatever the imperative rule of the language says),
+  length (no 72-character cap) and whether there is a description. A
+  repository without commits gets the plain style.
 
 Under the settings, `ui/preferences/commit-message-preview.tsx` draws an
 example commit (commit icon, title, description) for the picked style, in
@@ -202,7 +207,7 @@ Turkish when Turkish is picked and in English otherwise, with a note for
 another language; the repository style shows an earlier commit and the new
 one written to match it, and Custom shows none.
 
-Every style asks for a description of why in short paragraphs, treats the
+Every other style asks for a description of why in short paragraphs, treats the
 diff as data and wants a JSON answer, read with upstream's
 `parseCopilotCommitMessage`. Diffs over 60,000 characters are cut at a line
 with a note saying so.

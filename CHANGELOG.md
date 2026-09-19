@@ -22,8 +22,9 @@ notes are in `changelog.json` and on
 - Commit messages written by AI: a sparkle button next to the commit message
   writes the title and description from the selected changes, for you to
   read before committing. Language: Turkish, English or any other you name
-  (English if the model doesn't know it). Style: plain, Conventional
-  Commits, Gitmoji, the repository's own history, or your own rules. Options → AI now picks a
+  (English if the model doesn't know it). Style: the repository's own
+  history (the default, so new commits read like the earlier ones), plain,
+  Conventional Commits, Gitmoji, or your own rules. Options → AI now picks a
   provider and model per feature, so translation and commit messages can use
   different ones (say Claude for translation, DeepSeek Flash for commits).
 - Repository groups: arrange the repository list into your own groups

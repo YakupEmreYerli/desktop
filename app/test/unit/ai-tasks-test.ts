@@ -72,11 +72,11 @@ describe('commit message generation', () => {
     ...change,
   })
 
-  it('defaults to plain Turkish and keeps what is picked', () => {
+  it("defaults to Turkish in the repository's style and keeps what is picked", () => {
     assert.deepStrictEqual(getCommitMessageSettings(), {
       language: 'turkish',
       otherLanguage: '',
-      style: 'plain',
+      style: 'repository',
       customStyle: '',
     })
     setCommitMessageSettings({ language: 'other', otherLanguage: 'Deutsch' })
@@ -94,11 +94,14 @@ describe('commit message generation', () => {
     localStorage.setItem('ai-commit-message-style', 'haiku')
     const { language, style } = getCommitMessageSettings()
     assert.equal(language, 'turkish')
-    assert.equal(style, 'plain')
+    assert.equal(style, 'repository')
   })
 
   it('names the language, with English as the fallback', () => {
-    assert.match(buildCommitMessageInstructions(settings()), /Write in Turkish/)
+    assert.match(
+      buildCommitMessageInstructions(settings({ style: 'plain' })),
+      /Write in Turkish/
+    )
     assert.match(
       buildCommitMessageInstructions(settings({ language: 'english' })),
       /Write in English/
@@ -121,7 +124,10 @@ describe('commit message generation', () => {
       history?: string[]
     ) => buildCommitMessageInstructions(settings(change), history)
 
-    assert.match(rules({}), /without\s+a trailing period, a type prefix/)
+    assert.match(
+      rules({ style: 'plain' }),
+      /without\s+a trailing period, a type prefix/
+    )
     assert.match(rules({ style: 'conventional' }), /"type\(scope\): summary"/)
     assert.match(rules({ style: 'gitmoji' }), /✨ new feature/)
     for (const style of CommitMessageStyles) {
@@ -142,6 +148,27 @@ describe('commit message generation', () => {
       buildCommitMessageInstructions(settings({ style: 'repository' }), []),
       /<history>/
     )
+  })
+
+  it('lets the history decide the form, length and description', () => {
+    const history = ['belgeler: rapor güncellendi', 'C: sayfalar eklendi']
+    const following = buildCommitMessageInstructions(
+      settings({ style: 'repository' }),
+      history
+    )
+    assert.match(following, /Write in Turkish/)
+    assert.doesNotMatch(following, /imperative mood, like "Depo/)
+    assert.doesNotMatch(following, /at most 72 characters/)
+    assert.match(following, /description only if the history's messages/)
+    assert.match(following, /grammatical\s+form/)
+
+    // Without history it's the plain style, imperative included
+    const plain = buildCommitMessageInstructions(
+      settings({ style: 'repository' }),
+      []
+    )
+    assert.match(plain, /imperative mood, like "Depo/)
+    assert.match(plain, /at most 72 characters/)
   })
 
   it('adds custom rules, plain when there are none', () => {
