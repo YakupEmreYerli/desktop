@@ -196,6 +196,12 @@ provider and model:
   (the user's rules, which take precedence over the plain rules; plain when
   empty).
 
+Under the settings, `ui/preferences/commit-message-preview.tsx` draws an
+example commit (commit icon, title, description) for the picked style, in
+Turkish when Turkish is picked and in English otherwise, with a note for
+another language; the repository style shows an earlier commit and the new
+one written to match it, and Custom shows none.
+
 Every style asks for a description of why in short paragraphs, treats the
 diff as data and wants a JSON answer, read with upstream's
 `parseCopilotCommitMessage`. Diffs over 60,000 characters are cut at a line

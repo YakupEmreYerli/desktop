@@ -45,15 +45,6 @@ export const CommitMessageStyleNames: Record<CommitMessageStyle, string> = {
   custom: 'Custom…',
 }
 
-/** An example title per style, shown under the setting */
-export const CommitMessageStyleExamples: Record<CommitMessageStyle, string> = {
-  plain: 'Add a free shipping threshold to the cart total',
-  conventional: 'feat(cart): add a free shipping threshold',
-  gitmoji: '✨ Add a free shipping threshold to the cart total',
-  repository: 'Follows the format of the last commits in each repository',
-  custom: 'Follows the rules you write',
-}
-
 export interface ICommitMessageSettings {
   readonly language: CommitMessageLanguage
   /** The language's name when `language` is `other` */

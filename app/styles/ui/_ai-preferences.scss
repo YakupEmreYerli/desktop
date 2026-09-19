@@ -177,13 +177,64 @@
   }
 }
 
-#preferences .ai-preferences .ai-style-example {
+// An example commit under the commit message settings, drawn like a row
+// of the history list
+#preferences .ai-preferences .commit-preview-example {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-half);
   margin: 0;
-  font-size: var(--font-size-sm);
-  color: var(--text-secondary-color);
 
-  code {
-    font-family: var(--font-family-monospace);
-    color: var(--text-color);
+  figcaption,
+  .commit-preview-step {
+    font-size: var(--font-size-sm);
+    color: var(--text-secondary-color);
+  }
+
+  .commit-preview-step:not(:first-of-type) {
+    margin-top: var(--spacing-half);
+  }
+
+  .commit-preview {
+    display: flex;
+    gap: var(--spacing);
+    padding: var(--spacing) var(--spacing);
+    border: var(--base-border);
+    border-radius: var(--border-radius);
+    background: var(--box-alt-background-color);
+
+    &.muted {
+      opacity: 0.7;
+    }
+  }
+
+  .commit-preview-icon {
+    flex-shrink: 0;
+    margin-top: 1px;
+    color: var(--text-secondary-color);
+  }
+
+  .commit-preview-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+  }
+
+  .commit-preview-title {
+    font-weight: var(--font-weight-semibold);
+    overflow-wrap: anywhere;
+  }
+
+  .commit-preview-description {
+    font-size: var(--font-size-sm);
+    color: var(--text-secondary-color);
+    line-height: 1.4;
+  }
+
+  .commit-preview-note {
+    margin: 0;
+    font-size: var(--font-size-sm);
+    color: var(--text-secondary-color);
   }
 }

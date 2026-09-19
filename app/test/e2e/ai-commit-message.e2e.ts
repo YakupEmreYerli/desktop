@@ -384,3 +384,53 @@ test('the AI tab fits a short window and scrolls', async () => {
   await expect(style).toBeInViewport()
   await closeOptions()
 })
+
+test('the example commit follows the language and style', async () => {
+  const dialog = await openAIOptions()
+  const commit = dialog.locator('section.ai-task', {
+    has: page.locator('h3', { hasText: 'Commit messages' }),
+  })
+  const example = commit.locator('.commit-preview-example')
+  const titles = () =>
+    example.locator('.commit-preview-title').allTextContents()
+
+  await commit.getByLabel('Language', { exact: true }).selectOption('turkish')
+  await commit.getByLabel('Style').selectOption('plain')
+  await expect(example.locator('figcaption')).toHaveText('Örnek')
+  expect(await titles()).toEqual(['Sepete ücretsiz kargo sınırı ekle'])
+  await expect(example.locator('.commit-preview-description')).toContainText(
+    'siparişlerde'
+  )
+
+  await commit.getByLabel('Style').selectOption('conventional')
+  expect(await titles()).toEqual(['feat(sepet): ücretsiz kargo sınırı ekle'])
+  await commit.getByLabel('Style').selectOption('gitmoji')
+  expect(await titles()).toEqual(['✨ Sepete ücretsiz kargo sınırı ekle'])
+  await commit.getByLabel('Style').selectOption('repository')
+  expect(await titles()).toEqual([
+    '[SEPET] Kupon kodu desteği ekle',
+    '[SEPET] Ücretsiz kargo sınırı ekle',
+  ])
+
+  await commit.getByLabel('Language', { exact: true }).selectOption('english')
+  await expect(example.locator('figcaption')).toHaveText('Example')
+  expect(await titles()).toEqual([
+    '[CART] Support coupon codes',
+    '[CART] Add a free shipping threshold',
+  ])
+  await commit.getByLabel('Style').selectOption('plain')
+  expect(await titles()).toEqual(['Add a free shipping threshold to the cart'])
+
+  await commit.getByLabel('Language', { exact: true }).selectOption('other')
+  await commit.getByLabel('Language name').fill('Deutsch')
+  await expect(example.locator('.commit-preview-note')).toHaveText(
+    'Shown in English; messages are written in Deutsch.'
+  )
+
+  await commit.getByLabel('Style').selectOption('custom')
+  await expect(example).toHaveCount(0)
+
+  await commit.getByLabel('Language', { exact: true }).selectOption('turkish')
+  await commit.getByLabel('Style').selectOption('plain')
+  await closeOptions()
+})

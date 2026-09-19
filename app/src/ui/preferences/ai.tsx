@@ -29,10 +29,10 @@ import {
   testProvider,
 } from '../../lib/ai/providers'
 import { TextArea } from '../lib/text-area'
+import { CommitMessagePreview } from './commit-message-preview'
 import {
   CommitMessageLanguageNames,
   CommitMessageLanguages,
-  CommitMessageStyleExamples,
   CommitMessageStyleNames,
   CommitMessageStyles,
   ICommitMessageSettings,
@@ -284,7 +284,7 @@ class TaskSettings extends React.Component<
             </p>
           </div>
         )}
-        {style === 'custom' ? (
+        {style === 'custom' && (
           <TextArea
             label="Your rules"
             value={customStyle}
@@ -294,15 +294,12 @@ class TaskSettings extends React.Component<
             }
             onValueChanged={this.onCustomStyleChanged}
           />
-        ) : (
-          <p className="ai-style-example">
-            {style === 'repository' ? (
-              CommitMessageStyleExamples[style]
-            ) : (
-              <code>{CommitMessageStyleExamples[style]}</code>
-            )}
-          </p>
         )}
+        <CommitMessagePreview
+          language={language}
+          otherLanguage={otherLanguage}
+          style={style}
+        />
       </>
     )
   }
