@@ -23,6 +23,7 @@ import {
 } from '@playwright/test'
 import { _electron as electron } from 'playwright'
 import { getDistPath, getExecutableName } from '../../../script/dist-info'
+import { guardRealGitConfig, isolatedEnvironment } from './isolated-environment'
 
 const root = path.join(os.tmpdir(), 'github-desktop-e2e-repository-list')
 const configHome = path.join(root, 'config')
@@ -47,10 +48,7 @@ const names = [
 const repo = (name: string) => path.join(reposDir, name)
 
 const env = {
-  ...process.env,
-  XDG_CONFIG_HOME: configHome,
-  GIT_CONFIG_GLOBAL: path.join(root, '.gitconfig'),
-  GIT_CONFIG_SYSTEM: path.join(root, '.gitconfig-system'),
+  ...isolatedEnvironment(root),
   SSH_AUTH_SOCK: '',
   GIT_SSH_COMMAND: 'false',
 }
@@ -263,6 +261,7 @@ let app: ElectronApplication
 let page: Page
 
 test.describe.configure({ mode: 'serial' })
+guardRealGitConfig()
 
 test.beforeAll(async () => {
   expect(fs.existsSync(executable), `${executable} missing`).toBe(true)

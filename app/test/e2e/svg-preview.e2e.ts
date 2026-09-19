@@ -16,19 +16,14 @@ import {
 } from '@playwright/test'
 import { _electron as electron } from 'playwright'
 import { getDistPath, getExecutableName } from '../../../script/dist-info'
+import { guardRealGitConfig, isolatedEnvironment } from './isolated-environment'
 
 const root = path.join(os.tmpdir(), 'github-desktop-e2e-svg-preview')
-const configHome = path.join(root, 'config')
 const repository = path.join(root, 'icons')
 const executable = path.join(getDistPath(), getExecutableName())
 const cliScript = path.join(getDistPath(), 'resources', 'app', 'cli.js')
 
-const env = {
-  ...process.env,
-  XDG_CONFIG_HOME: configHome,
-  GIT_CONFIG_GLOBAL: path.join(root, '.gitconfig'),
-  GIT_CONFIG_SYSTEM: path.join(root, '.gitconfig-system'),
-}
+const env = isolatedEnvironment(root)
 
 const circle = `<svg xmlns="http://www.w3.org/2000/svg" width="120" height="80">
   <circle cx="40" cy="40" r="30" fill="#d33"/>
@@ -91,6 +86,7 @@ function images() {
 }
 
 test.describe.configure({ mode: 'serial' })
+guardRealGitConfig()
 
 test.beforeAll(async () => {
   fs.rmSync(root, { recursive: true, force: true })

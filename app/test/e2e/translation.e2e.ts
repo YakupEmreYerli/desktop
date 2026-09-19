@@ -19,19 +19,14 @@ import {
 } from '@playwright/test'
 import { _electron as electron } from 'playwright'
 import { getDistPath, getExecutableName } from '../../../script/dist-info'
+import { guardRealGitConfig, isolatedEnvironment } from './isolated-environment'
 
 const root = path.join(os.tmpdir(), 'github-desktop-e2e-translation')
-const configHome = path.join(root, 'config')
 const repository = path.join(root, 'docs')
 const executable = path.join(getDistPath(), getExecutableName())
 const cliScript = path.join(getDistPath(), 'resources', 'app', 'cli.js')
 
-const env = {
-  ...process.env,
-  XDG_CONFIG_HOME: configHome,
-  GIT_CONFIG_GLOBAL: path.join(root, '.gitconfig'),
-  GIT_CONFIG_SYSTEM: path.join(root, '.gitconfig-system'),
-}
+const env = isolatedEnvironment(root)
 
 const before = `# Notes
 
@@ -89,6 +84,7 @@ function newSideLines(page: Page) {
 }
 
 test.describe.configure({ mode: 'serial' })
+guardRealGitConfig()
 test.skip(!hasClaude, 'The claude CLI is not installed')
 
 test.beforeAll(async () => {

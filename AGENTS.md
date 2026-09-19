@@ -46,6 +46,16 @@ Linux system requirements: `docs/contributing/setup-linux.md` (upstream).
 - Public repository: commits accumulate locally and are pushed once when a
   piece of work is finished. Never force push.
 
+## E2E tests and the developer's machine
+
+Anything that launches the app for a test, a spec or a one-off script,
+takes its environment from `isolatedEnvironment()` in
+`app/test/e2e/isolated-environment.ts` and calls `guardRealGitConfig()`.
+The welcome flow writes the name and email typed into it to the global git
+config; without an isolated `GIT_CONFIG_GLOBAL` that is the developer's real
+`~/.gitconfig`, and every later commit on the machine carries the test
+identity.
+
 ## Before calling something done
 
 - `yarn lint` and the unit tests for the touched area pass, and new behaviour has
