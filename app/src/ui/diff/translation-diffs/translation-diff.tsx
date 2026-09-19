@@ -12,8 +12,8 @@ import {
 import { getBoolean, setBoolean } from '../../../lib/local-storage'
 import {
   AIProviders,
-  getProviderModel,
-  getSelectedProvider,
+  getTaskModel,
+  getTaskProvider,
   isAIConfigured,
   onAISettingsChanged,
 } from '../../../lib/ai/providers'
@@ -169,7 +169,7 @@ export class TranslationDiff extends React.Component<
     const controller = new AbortController()
     this.abortController = controller
 
-    if (!(await isAIConfigured())) {
+    if (!(await isAIConfigured('translation'))) {
       if (!controller.signal.aborted) {
         this.setState({ status: { kind: 'not-configured' } })
       }
@@ -310,7 +310,7 @@ export class TranslationDiff extends React.Component<
 
   private renderStatus() {
     const { status } = this.state
-    const kind = getSelectedProvider()
+    const kind = getTaskProvider('translation')
 
     if (status.kind === 'translating') {
       return (
@@ -327,7 +327,7 @@ export class TranslationDiff extends React.Component<
       return (
         <div className="translation-diff-status">
           <span className="translation-diff-source">
-            {AIProviders[kind].name} · {getProviderModel(kind)}
+            {AIProviders[kind].name} · {getTaskModel('translation')}
           </span>
           <Button
             className="translation-diff-retranslate"

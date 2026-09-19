@@ -2869,7 +2869,9 @@ export class App extends React.Component<IAppProps, IAppState> {
             dispatcher={this.props.dispatcher}
             repository={popup.repository}
             filesSelected={popup.filesSelected}
+            useAIProvider={popup.useAIProvider === true}
             showCopilotInstructionsTip={
+              popup.useAIProvider !== true &&
               account !== undefined &&
               enableCopilotSdkCommitMessageGeneration(account)
             }

@@ -18,6 +18,7 @@ import { AuthorInput } from '../lib/author-input/author-input'
 import { FocusContainer } from '../lib/focus-container'
 import { Octicon, OcticonSymbolVariant } from '../octicons'
 import * as octicons from '../octicons/octicons.generated'
+import { AICommitMessageButton } from './ai-commit-message-button'
 import { Author, UnknownAuthor, isKnownAuthor } from '../../models/author'
 import { IMenuItem } from '../../lib/menu-item'
 import { Commit, ICommitContext } from '../../models/commit'
@@ -1243,6 +1244,20 @@ export class CommitMessage extends React.Component<
       <div className={className}>
         {this.renderCoAuthorToggleButton()}
         {this.renderCopilotButton()}
+        <AICommitMessageButton
+          repository={this.props.repository}
+          filesSelected={this.props.filesSelected}
+          isAmending={this.props.commitToAmend !== null}
+          isCommitting={isCommitting === true}
+          isGeneratingCommitMessage={isGeneratingCommitMessage === true}
+          hasMessage={
+            !!this.state.commitMessage.summary ||
+            !!this.state.commitMessage.description
+          }
+          separatorBefore={
+            this.isCoAuthorInputEnabled || this.isCopilotButtonEnabled
+          }
+        />
         {this.renderCommitOptionsButton()}
       </div>
     )

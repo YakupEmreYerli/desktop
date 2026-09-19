@@ -1199,6 +1199,19 @@ export class Dispatcher {
     return this.appStore._generateCommitMessage(repository, filesSelected)
   }
 
+  /** Write the commit message with the provider picked in Options → AI */
+  public generateAICommitMessage(
+    repository: Repository,
+    filesSelected: ReadonlyArray<WorkingDirectoryFileChange>,
+    mustOverrideExistingMessage: boolean
+  ) {
+    return this.appStore._generateAICommitMessage(
+      repository,
+      filesSelected,
+      mustOverrideExistingMessage
+    )
+  }
+
   public cancelGenerateCommitMessage(repository: Repository) {
     return this.appStore._cancelGenerateCommitMessage(repository)
   }

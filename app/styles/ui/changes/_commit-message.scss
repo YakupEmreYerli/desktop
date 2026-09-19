@@ -167,6 +167,7 @@
   }
 
   .co-authors-toggle,
+  .ai-commit-message-button,
   .commit-options-button {
     color: var(--text-secondary-color);
 
@@ -283,6 +284,7 @@
 
     .co-authors-toggle,
     .copilot-button,
+    .ai-commit-message-button,
     .commit-options-button {
       // button reset styles
       border: none;

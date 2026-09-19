@@ -5,8 +5,8 @@ import * as Os from 'os'
 import { TokenStore } from '../stores/token-store'
 
 /**
- * The AI providers the fork's features (translation, later commit messages)
- * can use. Two are HTTP APIs with a key; `claude` runs the locally installed
+ * The AI providers the fork's features (translation, commit messages) can
+ * use. Two are HTTP APIs with a key; `claude` runs the locally installed
  * Claude Code CLI, so it uses the user's Claude subscription.
  */
 export type AIProviderKind = 'deepseek' | 'openrouter' | 'claude'
@@ -57,8 +57,25 @@ export const AIProviders: Record<AIProviderKind, IAIProviderInfo> = {
   },
 }
 
-const ProviderKey = 'ai-provider'
-const modelKey = (kind: AIProviderKind) => `ai-model-${kind}`
+/**
+ * The fork's AI features. Each picks its own provider and model, so a cheap
+ * fast model can write commit messages while another translates.
+ */
+export type AITask = 'translation' | 'commit-message'
+
+export const AITasks: ReadonlyArray<AITask> = ['translation', 'commit-message']
+
+export const AITaskNames: Record<AITask, string> = {
+  translation: 'Translation',
+  'commit-message': 'Commit messages',
+}
+
+const taskProviderKey = (task: AITask) => `ai-task-${task}-provider`
+const taskModelKey = (task: AITask) => `ai-task-${task}-model`
+/** Before tasks, one provider (and a model per provider) served everything */
+const LegacyProviderKey = 'ai-provider'
+const legacyModelKey = (kind: AIProviderKind) => `ai-model-${kind}`
+
 const SecretKey = `${
   __DEV__ ? 'GitHub Desktop Dev' : 'GitHub Desktop'
 } - AI provider`
@@ -66,8 +83,8 @@ const SecretKey = `${
 const settingsListeners = new Set<() => void>()
 
 /**
- * Call `listener` whenever the provider, a model or a key changes, so views
- * waiting for a provider can start. Returns a function that unsubscribes.
+ * Call `listener` whenever a task's provider or model, or a key changes, so
+ * views waiting for a provider can start. Returns a function that unsubscribes.
  */
 export function onAISettingsChanged(listener: () => void) {
   settingsListeners.add(listener)
@@ -82,32 +99,60 @@ function notifySettingsChanged() {
   }
 }
 
-/** The provider the user picked, or null if none has been set up */
-export function getSelectedProvider(): AIProviderKind | null {
-  const value = localStorage.getItem(ProviderKey)
-  return AIProviderKinds.find(k => k === value) ?? null
+const asProvider = (value: string | null) =>
+  AIProviderKinds.find(k => k === value) ?? null
+
+/** The provider picked for a task, or null if none has been picked */
+export function getTaskProvider(task: AITask): AIProviderKind | null {
+  const value = asProvider(localStorage.getItem(taskProviderKey(task)))
+  if (value === null && task === 'translation') {
+    return asProvider(localStorage.getItem(LegacyProviderKey))
+  }
+  return value
 }
 
-export function setSelectedProvider(kind: AIProviderKind | null) {
+export function setTaskProvider(task: AITask, kind: AIProviderKind | null) {
   if (kind === null) {
-    localStorage.removeItem(ProviderKey)
+    localStorage.removeItem(taskProviderKey(task))
   } else {
-    localStorage.setItem(ProviderKey, kind)
+    localStorage.setItem(taskProviderKey(task), kind)
+  }
+  // The model belonged to the previous provider
+  localStorage.removeItem(taskModelKey(task))
+  if (task === 'translation') {
+    localStorage.removeItem(LegacyProviderKey)
   }
   notifySettingsChanged()
 }
 
-export function getProviderModel(kind: AIProviderKind) {
-  const value = localStorage.getItem(modelKey(kind))?.trim()
+/** The model a task uses with its provider */
+export function getTaskModel(task: AITask): string {
+  const kind = getTaskProvider(task)
+  if (kind === null) {
+    return ''
+  }
+  const value =
+    localStorage.getItem(taskModelKey(task))?.trim() ||
+    (task === 'translation'
+      ? localStorage.getItem(legacyModelKey(kind))?.trim()
+      : undefined)
   return value ? value : AIProviders[kind].defaultModel
 }
 
-export function setProviderModel(kind: AIProviderKind, model: string) {
+export function setTaskModel(task: AITask, model: string) {
+  const kind = getTaskProvider(task)
   const trimmed = model.trim()
-  if (trimmed === '' || trimmed === AIProviders[kind].defaultModel) {
-    localStorage.removeItem(modelKey(kind))
+  if (
+    kind === null ||
+    trimmed === '' ||
+    trimmed === AIProviders[kind].defaultModel
+  ) {
+    localStorage.removeItem(taskModelKey(task))
   } else {
-    localStorage.setItem(modelKey(kind), trimmed)
+    localStorage.setItem(taskModelKey(task), trimmed)
+  }
+  if (kind !== null) {
+    localStorage.removeItem(legacyModelKey(kind))
   }
   notifySettingsChanged()
 }
@@ -136,11 +181,11 @@ export class AIProviderError extends Error {
 }
 
 /**
- * Whether AI features can run: a provider is picked and it has what it needs
- * (a key, or the claude CLI on this machine).
+ * Whether a task can run: it has a provider and the provider has what it
+ * needs (a key, or the claude CLI on this machine).
  */
-export async function isAIConfigured(): Promise<boolean> {
-  const kind = getSelectedProvider()
+export async function isAIConfigured(task: AITask): Promise<boolean> {
+  const kind = getTaskProvider(task)
   if (kind === null) {
     return false
   }
@@ -160,13 +205,20 @@ export interface IAIRequest {
   readonly signal?: AbortSignal
 }
 
-/** Run a single prompt against the selected provider and return its text */
-export async function completeWithAI(request: IAIRequest): Promise<string> {
-  const kind = getSelectedProvider()
+/** Run a single prompt with the task's provider and model */
+export async function completeWithAI(
+  task: AITask,
+  request: IAIRequest
+): Promise<string> {
+  const kind = getTaskProvider(task)
   if (kind === null) {
-    throw new AIProviderError('No AI provider is set up.')
+    throw new AIProviderError(
+      `No AI provider is picked for ${AITaskNames[
+        task
+      ].toLowerCase()}. Pick one in Options → AI.`
+    )
   }
-  return completeWith(kind, getProviderModel(kind), request)
+  return completeWith(kind, getTaskModel(task), request)
 }
 
 /** Run a prompt against a specific provider and model */

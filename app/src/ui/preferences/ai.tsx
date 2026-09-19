@@ -3,9 +3,9 @@ import * as Os from 'os'
 import classNames from 'classnames'
 
 import { DialogContent } from '../dialog'
-import { RadioGroup } from '../lib/radio-group'
 import { TextBox } from '../lib/text-box'
 import { PasswordTextBox } from '../lib/password-text-box'
+import { Select } from '../lib/select'
 import { Button } from '../lib/button'
 import { LinkButton } from '../lib/link-button'
 import { Loading } from '../lib/loading'
@@ -15,16 +15,26 @@ import {
   AIProviderKind,
   AIProviderKinds,
   AIProviders,
+  AITask,
+  AITaskNames,
+  AITasks,
   deleteProviderKey,
   findClaudeExecutable,
   getProviderKey,
-  getProviderModel,
-  getSelectedProvider,
+  getTaskModel,
+  getTaskProvider,
   setProviderKey,
-  setProviderModel,
-  setSelectedProvider,
+  setTaskModel,
+  setTaskProvider,
   testProvider,
 } from '../../lib/ai/providers'
+import {
+  CommitMessageLanguage,
+  CommitMessageLanguageNames,
+  CommitMessageLanguages,
+  getCommitMessageLanguage,
+  setCommitMessageLanguage,
+} from '../../lib/ai/commit-message'
 
 /** One line under each provider's name */
 const ProviderSummaries: Record<AIProviderKind, string> = {
@@ -33,26 +43,20 @@ const ProviderSummaries: Record<AIProviderKind, string> = {
   claude: 'Your Claude subscription, through the claude command.',
 }
 
+/** What each feature does, under its name */
+const TaskSummaries: Record<AITask, string> = {
+  translation: 'Translates text documents into Turkish in the diff view.',
+  'commit-message':
+    'Writes the commit title and description from the selected changes.',
+}
+
+const NoProvider = 'none'
+
 type TestResult =
   | { readonly kind: 'idle' }
   | { readonly kind: 'running' }
   | { readonly kind: 'ok' }
   | { readonly kind: 'failed'; readonly message: string }
-
-interface IAIPreferencesState {
-  readonly provider: AIProviderKind
-  readonly model: string
-
-  /** Whether the keychain holds a key for the selected provider */
-  readonly hasStoredKey: boolean | null
-  /** A key typed in but not saved yet */
-  readonly keyDraft: string
-
-  /** Where the claude command was found; undefined while looking */
-  readonly claudePath: string | null | undefined
-
-  readonly test: TestResult
-}
 
 interface IModelSuggestionProps {
   readonly model: string
@@ -78,156 +82,159 @@ class ModelSuggestion extends React.Component<IModelSuggestionProps> {
   }
 }
 
-/**
- * Options → AI: which provider the fork's AI features use. Changes are saved
- * as they're made; keys go to the OS keychain.
- */
-export class AIPreferences extends React.Component<{}, IAIPreferencesState> {
+function TestResultView(props: {
+  readonly test: TestResult
+  readonly name: string
+}) {
+  const { test } = props
+  return (
+    <span
+      className={classNames('ai-test-result', test.kind)}
+      aria-live="polite"
+    >
+      {test.kind === 'running' && (
+        <>
+          <Loading />
+          Asking {props.name}…
+        </>
+      )}
+      {test.kind === 'ok' && (
+        <>
+          <Octicon symbol={octicons.check} />
+          Works.
+        </>
+      )}
+      {test.kind === 'failed' && (
+        <>
+          <Octicon symbol={octicons.alert} />
+          {test.message}
+        </>
+      )}
+    </span>
+  )
+}
+
+const errorMessage = (e: unknown) =>
+  e instanceof Error ? e.message : String(e)
+
+interface ITaskSettingsState {
+  readonly provider: AIProviderKind | null
+  readonly model: string
+  readonly language: CommitMessageLanguage
+  readonly test: TestResult
+}
+
+/** Provider, model (and language for commit messages) of one feature */
+class TaskSettings extends React.Component<
+  { readonly task: AITask },
+  ITaskSettingsState
+> {
   private unmounted = false
 
-  public constructor(props: {}) {
+  public constructor(props: { readonly task: AITask }) {
     super(props)
-    // Opening the tab picks the first provider; it isn't usable until it has
-    // a key (or the claude command), so this doesn't turn anything on
-    const provider = getSelectedProvider() ?? AIProviderKinds[0]
-    setSelectedProvider(provider)
     this.state = {
-      provider,
-      model: getProviderModel(provider),
-      hasStoredKey: null,
-      keyDraft: '',
-      claudePath: undefined,
+      provider: getTaskProvider(props.task),
+      model: getTaskModel(props.task),
+      language: getCommitMessageLanguage(),
       test: { kind: 'idle' },
     }
-  }
-
-  public componentDidMount() {
-    this.loadProviderDetails(this.state.provider)
   }
 
   public componentWillUnmount() {
     this.unmounted = true
   }
 
-  private async loadProviderDetails(provider: AIProviderKind) {
-    if (provider === 'claude') {
-      const claudePath = await findClaudeExecutable()
-      if (!this.unmounted && this.state.provider === provider) {
-        this.setState({ claudePath })
-      }
-    } else {
-      const key = await getProviderKey(provider)
-      if (!this.unmounted && this.state.provider === provider) {
-        this.setState({ hasStoredKey: !!key })
-      }
-    }
-  }
-
-  private onProviderChanged = (provider: AIProviderKind) => {
-    setSelectedProvider(provider)
+  private onProviderChanged = (event: React.FormEvent<HTMLSelectElement>) => {
+    const value = event.currentTarget.value
+    const provider = AIProviderKinds.find(k => k === value) ?? null
+    setTaskProvider(this.props.task, provider)
     this.setState({
       provider,
-      model: getProviderModel(provider),
-      hasStoredKey: null,
-      keyDraft: '',
-      claudePath: undefined,
+      model: getTaskModel(this.props.task),
       test: { kind: 'idle' },
     })
-    this.loadProviderDetails(provider)
   }
 
   private onModelChanged = (model: string) => {
-    setProviderModel(this.state.provider, model)
+    setTaskModel(this.props.task, model)
     this.setState({ model, test: { kind: 'idle' } })
   }
 
-  private onKeyDraftChanged = (keyDraft: string) => {
-    this.setState({ keyDraft, test: { kind: 'idle' } })
-  }
-
-  private onSaveKey = async () => {
-    const { provider, keyDraft } = this.state
-    if (keyDraft.trim() === '') {
-      return
-    }
-    await setProviderKey(provider, keyDraft)
-    if (!this.unmounted) {
-      this.setState({ hasStoredKey: true, keyDraft: '' })
-    }
-  }
-
-  private onRemoveKey = async () => {
-    await deleteProviderKey(this.state.provider)
-    if (!this.unmounted) {
-      this.setState({ hasStoredKey: false, test: { kind: 'idle' } })
-    }
+  private onLanguageChanged = (event: React.FormEvent<HTMLSelectElement>) => {
+    const value = event.currentTarget.value
+    const language = CommitMessageLanguages.find(l => l === value) ?? 'turkish'
+    setCommitMessageLanguage(language)
+    this.setState({ language })
   }
 
   private onTest = async () => {
-    const { provider, model, keyDraft } = this.state
+    const { provider, model } = this.state
+    if (provider === null) {
+      return
+    }
     this.setState({ test: { kind: 'running' } })
     try {
       await testProvider(
         provider,
-        model.trim() || AIProviders[provider].defaultModel,
-        keyDraft.trim() || undefined
+        model.trim() || AIProviders[provider].defaultModel
       )
       if (!this.unmounted) {
         this.setState({ test: { kind: 'ok' } })
       }
     } catch (e) {
       if (!this.unmounted) {
-        this.setState({
-          test: {
-            kind: 'failed',
-            message: e instanceof Error ? e.message : String(e),
-          },
-        })
+        this.setState({ test: { kind: 'failed', message: errorMessage(e) } })
       }
     }
   }
 
   public render() {
+    const { task } = this.props
     const { provider } = this.state
 
     return (
-      <DialogContent>
-        <div className="ai-preferences">
-          <h2 id="ai-provider-heading">AI provider</h2>
-          <p className="settings-description">
-            Used to translate text documents into Turkish in the diff view.
-            Documents are sent to the provider you pick.
-          </p>
-
-          <RadioGroup<AIProviderKind>
-            ariaLabelledBy="ai-provider-heading"
-            className="ai-provider-list"
-            selectedKey={provider}
-            radioButtonKeys={AIProviderKinds}
-            onSelectionChanged={this.onProviderChanged}
-            renderRadioButtonLabelContents={this.renderProviderLabel}
-          />
-
-          {this.renderProviderSettings(provider)}
+      <section className="ai-task" aria-labelledby={`ai-task-${task}`}>
+        <div className="ai-task-heading">
+          <h3 id={`ai-task-${task}`}>{AITaskNames[task]}</h3>
+          <p>{TaskSummaries[task]}</p>
         </div>
-      </DialogContent>
+        <div className="ai-task-fields">
+          <Select
+            label="Provider"
+            value={provider ?? NoProvider}
+            onChange={this.onProviderChanged}
+          >
+            <option value={NoProvider}>Off</option>
+            {AIProviderKinds.map(k => (
+              <option key={k} value={k}>
+                {AIProviders[k].name}
+              </option>
+            ))}
+          </Select>
+          {task === 'commit-message' && (
+            <Select
+              label="Language"
+              value={this.state.language}
+              onChange={this.onLanguageChanged}
+            >
+              {CommitMessageLanguages.map(l => (
+                <option key={l} value={l}>
+                  {CommitMessageLanguageNames[l]}
+                </option>
+              ))}
+            </Select>
+          )}
+        </div>
+        {provider !== null && this.renderModel(provider)}
+      </section>
     )
   }
 
-  private renderProviderLabel = (kind: AIProviderKind) => {
-    return (
-      <span className="ai-provider-label">
-        <span className="ai-provider-name">{AIProviders[kind].name}</span>
-        <span className="ai-provider-summary">{ProviderSummaries[kind]}</span>
-      </span>
-    )
-  }
-
-  private renderProviderSettings(provider: AIProviderKind) {
+  private renderModel(provider: AIProviderKind) {
     const info = AIProviders[provider]
-
     return (
-      <div className="ai-provider-settings">
+      <>
         <div className="ai-field">
           <TextBox
             label="Model"
@@ -246,25 +253,111 @@ export class AIPreferences extends React.Component<{}, IAIPreferencesState> {
             ))}
           </div>
         </div>
+        <div className="ai-test">
+          <Button
+            onClick={this.onTest}
+            disabled={this.state.test.kind === 'running'}
+          >
+            Test
+          </Button>
+          <TestResultView test={this.state.test} name={info.name} />
+        </div>
+      </>
+    )
+  }
+}
 
-        {info.needsKey ? this.renderKeyField(provider) : this.renderClaude()}
+interface IProviderSettingsState {
+  /** Whether the keychain holds a key; null while looking */
+  readonly hasStoredKey: boolean | null
+  /** A key typed in but not saved yet */
+  readonly keyDraft: string
+  /** Where the claude command was found; undefined while looking */
+  readonly claudePath: string | null | undefined
+}
 
-        {this.renderTest(provider)}
-      </div>
+/** A provider's API key, or where the claude command is */
+class ProviderSettings extends React.Component<
+  { readonly kind: AIProviderKind },
+  IProviderSettingsState
+> {
+  private unmounted = false
+
+  public constructor(props: { readonly kind: AIProviderKind }) {
+    super(props)
+    this.state = { hasStoredKey: null, keyDraft: '', claudePath: undefined }
+  }
+
+  public async componentDidMount() {
+    const { kind } = this.props
+    if (kind === 'claude') {
+      const claudePath = await findClaudeExecutable()
+      if (!this.unmounted) {
+        this.setState({ claudePath })
+      }
+    } else {
+      const key = await getProviderKey(kind)
+      if (!this.unmounted) {
+        this.setState({ hasStoredKey: !!key })
+      }
+    }
+  }
+
+  public componentWillUnmount() {
+    this.unmounted = true
+  }
+
+  private onKeyDraftChanged = (keyDraft: string) => {
+    this.setState({ keyDraft })
+  }
+
+  private onSaveKey = async () => {
+    const { keyDraft } = this.state
+    if (keyDraft.trim() === '') {
+      return
+    }
+    await setProviderKey(this.props.kind, keyDraft)
+    if (!this.unmounted) {
+      this.setState({ hasStoredKey: true, keyDraft: '' })
+    }
+  }
+
+  private onRemoveKey = async () => {
+    await deleteProviderKey(this.props.kind)
+    if (!this.unmounted) {
+      this.setState({ hasStoredKey: false })
+    }
+  }
+
+  public render() {
+    const { kind } = this.props
+    const info = AIProviders[kind]
+    return (
+      <section className="ai-provider" aria-labelledby={`ai-provider-${kind}`}>
+        <div className="ai-provider-label">
+          <span className="ai-provider-name" id={`ai-provider-${kind}`}>
+            {info.name}
+          </span>
+          <span className="ai-provider-summary">{ProviderSummaries[kind]}</span>
+        </div>
+        {info.needsKey ? this.renderKeyField() : this.renderClaude()}
+      </section>
     )
   }
 
-  private renderKeyField(provider: AIProviderKind) {
-    const info = AIProviders[provider]
+  private renderKeyField() {
+    const info = AIProviders[this.props.kind]
     const { hasStoredKey, keyDraft } = this.state
 
     return (
       <div className="ai-field">
         <PasswordTextBox
-          label="API key"
+          ariaLabel={`${info.name} API key`}
           value={keyDraft}
           placeholder={
-            hasStoredKey ? 'Saved in the keychain. Type to replace it.' : ''
+            hasStoredKey
+              ? 'Key saved in the keychain. Type to replace it.'
+              : 'API key'
           }
           onValueChanged={this.onKeyDraftChanged}
         />
@@ -329,45 +422,37 @@ export class AIPreferences extends React.Component<{}, IAIPreferencesState> {
       </p>
     )
   }
+}
 
-  private renderTest(provider: AIProviderKind) {
-    const { test, hasStoredKey, keyDraft, claudePath } = this.state
-    const ready = AIProviders[provider].needsKey
-      ? hasStoredKey === true || keyDraft.trim() !== ''
-      : typeof claudePath === 'string'
-
+/**
+ * Options → AI: which provider and model each AI feature uses, and the
+ * providers' keys. Changes are saved as they're made; keys go to the OS
+ * keychain.
+ */
+export class AIPreferences extends React.Component {
+  public render() {
     return (
-      <div className="ai-test">
-        <Button
-          onClick={this.onTest}
-          disabled={!ready || test.kind === 'running'}
-        >
-          Test connection
-        </Button>
-        <span
-          className={classNames('ai-test-result', test.kind)}
-          aria-live="polite"
-        >
-          {test.kind === 'running' && (
-            <>
-              <Loading />
-              Asking {AIProviders[provider].name}…
-            </>
-          )}
-          {test.kind === 'ok' && (
-            <>
-              <Octicon symbol={octicons.check} />
-              Works.
-            </>
-          )}
-          {test.kind === 'failed' && (
-            <>
-              <Octicon symbol={octicons.alert} />
-              {test.message}
-            </>
-          )}
-        </span>
-      </div>
+      <DialogContent>
+        <div className="ai-preferences">
+          <h2>Features</h2>
+          <p className="settings-description">
+            Each feature uses its own provider and model. What it works on is
+            sent to that provider.
+          </p>
+          <div className="ai-task-list">
+            {AITasks.map(task => (
+              <TaskSettings key={task} task={task} />
+            ))}
+          </div>
+
+          <h2>Providers</h2>
+          <div className="ai-provider-list">
+            {AIProviderKinds.map(kind => (
+              <ProviderSettings key={kind} kind={kind} />
+            ))}
+          </div>
+        </div>
+      </DialogContent>
     )
   }
 }

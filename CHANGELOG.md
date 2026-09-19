@@ -19,6 +19,11 @@ notes are in `changelog.json` and on
   `.md`, `.txt` and `.rst` files shows the same diff with its text translated
   line for line. Documents already in Turkish get no switch. Uses DeepSeek, OpenRouter or the local Claude CLI,
   set up in the new Options → AI tab.
+- Commit messages written by AI: a sparkle button next to the commit message
+  writes the title and description from the selected changes, in Turkish
+  (or English), for you to read before committing. Options → AI now picks a
+  provider and model per feature, so translation and commit messages can use
+  different ones (say Claude for translation, DeepSeek Flash for commits).
 - Repository groups: arrange the repository list into your own groups
   (right click a repository → Move to group), reorder and rename them from
   the group header's menu, collapse any section by clicking its header, hide

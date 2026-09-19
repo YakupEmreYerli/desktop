@@ -32,6 +32,7 @@ This is not an official GitHub product. For the official app see
 | **HTML previews in diffs** | HTML files open as rendered pages, old and new side by side when modified, with a Preview/Code switch. Local stylesheets, images and scripts load; scripts run sandboxed. |
 | **Turkish translation of documents** | Markdown and text files get a Code / Türkçe switch that shows the file translated into Turkish, changed paragraphs highlighted. Works with DeepSeek, OpenRouter or your Claude subscription (Options → AI). |
 | **Tidier changes filter** | Filter options have count badges and full-width rows, and the popover stays open while you pick several filters. |
+| **AI commit messages** | A button next to the commit message writes the title and description from your changes, in Turkish or English. Each AI feature picks its own provider and model in Options → AI (DeepSeek, OpenRouter or your Claude subscription). |
 | **Repository groups** | Arrange the repository list into your own groups, reorder and collapse them, hide repositories you rarely open, and turn off the Recent group. The same is possible from the command line with `github group`, so an agent can tidy the list for you. |
 | **Repository list from the command line** | `github list`, `github add` and `github remove` show and change the app's repositories without a dialog, so scripts and coding agents can manage them. Removing never touches the folder on disk. |
 | **Per-user Linux install** | One script builds and installs the app into your home directory, no sudo, keeping existing GitHub Desktop settings and sign-in. |
@@ -84,7 +85,7 @@ app/styles/ui/_pdf-diff.scss          PDF viewer styles
 app/src/lib/html.ts                   HTML detection, asset inlining
 app/src/ui/diff/html-diffs/           HTML preview
 app/styles/ui/_html-diff.scss         HTML preview styles
-app/src/lib/ai/                       AI providers, translation
+app/src/lib/ai/                       AI providers, translation, commit messages
 app/src/ui/diff/translation-diffs/    Turkish translation view
 app/src/ui/preferences/ai.tsx         Options → AI
 app/styles/ui/changes/_filter-popover.scss

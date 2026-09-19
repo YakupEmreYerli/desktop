@@ -18,3 +18,8 @@ export function openAISettings() {
     initialSelectedTab: PreferencesTab.AI,
   })
 }
+
+/** The app's dispatcher, for fork components the upstream tree gives none */
+export function getRegisteredDispatcher(): Dispatcher | null {
+  return dispatcher
+}

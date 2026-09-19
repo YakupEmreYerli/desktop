@@ -3,6 +3,25 @@
 Why the fork is built the way it is. Newest first. How things work today is in
 `ARCHITECTURE.md`.
 
+## 2026-09-19: A provider and model per AI feature
+
+Translation wants a strong model for long text; commit messages are short
+and frequent, so a cheap fast one fits (the maintainer's example: Claude for
+translation, DeepSeek Flash for commits). One global provider couldn't do
+both, so each feature is a task with its own provider and model, and keys
+stay per provider so a key is entered once. The old single setting becomes
+the translation task's, so nothing had to be set up again.
+
+## 2026-09-19: Commit messages through upstream's Copilot flow, own button
+
+Upstream's generation flow already has the spinner, cancelling, the
+override warning and amend support; the fork only swaps where the text comes
+from. A separate button rather than taking over Copilot's keeps Copilot
+working for anyone who has it and keeps the upstream edit small. The message
+is put in the box and never committed: the maintainer reads it first.
+Turkish in the imperative mood by default, matching how this repository's
+own commits are written.
+
 ## 2026-09-19: Repository groups in a file next to upstream's owner groups
 
 The maintainer wanted to arrange the list by hand and have agents do it too.

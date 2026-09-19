@@ -329,7 +329,7 @@ async function translateBatch(
   sources: ReadonlyArray<string>,
   signal: AbortSignal | undefined
 ) {
-  const reply = await completeWithAI({
+  const reply = await completeWithAI('translation', {
     system: TranslationInstructions,
     prompt: JSON.stringify({ blocks: sources }),
     json: true,

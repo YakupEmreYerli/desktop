@@ -1,4 +1,7 @@
 import * as Path from 'path'
+import { isAIConfigured } from '../ai/providers'
+import { generateCommitMessageWithAI } from '../ai/commit-message'
+import { openAISettings } from '../ai/settings-link'
 import { writeFile } from 'fs/promises'
 import {
   AccountsStore,
@@ -6436,6 +6439,58 @@ export class AppStore extends TypedBaseStore<IAppState> {
         return false
       }
 
+      return true
+    })
+  }
+
+  /**
+   * The fork's commit message button: the same flow as Copilot's, with the
+   * provider picked for commit messages in Options → AI.
+   */
+  public async _generateAICommitMessage(
+    repository: Repository,
+    filesSelected: ReadonlyArray<WorkingDirectoryFileChange>,
+    mustOverrideExistingMessage: boolean
+  ): Promise<boolean> {
+    if (!(await isAIConfigured('commit-message'))) {
+      openAISettings()
+      return false
+    }
+    if (mustOverrideExistingMessage && this.confirmCommitMessageOverride) {
+      await this._showPopup({
+        type: PopupType.GenerateCommitMessageOverrideWarning,
+        repository,
+        filesSelected,
+        useAIProvider: true,
+      })
+      return false
+    }
+
+    return this.withIsGeneratingCommitMessage(repository, async signal => {
+      try {
+        const commitToAmend =
+          this.repositoryStateCache.get(repository)?.commitToAmend?.sha
+        const diff = await getFilesDiffText(
+          repository,
+          filesSelected,
+          commitToAmend ? `${commitToAmend}^` : undefined
+        )
+        if (!diff) {
+          return false
+        }
+        const message = await generateCommitMessageWithAI(diff, signal)
+        this._setCommitMessage(repository, {
+          summary: message.title,
+          description: message.description,
+          timestamp: Date.now(),
+        })
+      } catch (e) {
+        if (signal.aborted) {
+          return false
+        }
+        this.emitError(new ErrorWithMetadata(e, { repository }))
+        return false
+      }
       return true
     })
   }

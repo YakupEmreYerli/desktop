@@ -32,6 +32,11 @@ conflicts.
 | `app/src/ui/repositories-list/repositories-list.tsx` | groups via `arrangeRepositories`, headers via `renderRepositorySectionHeader`, group items prepended to the context menu, layout subscription |
 | `app/src/ui/lib/filter-list.tsx`, `section-filter-list.tsx` | `IFilterListGroup.showWhenEmpty`: a header without rows (collapsed or empty group) |
 | `app/src/models/popup.ts`, `app/src/ui/app.tsx` | `PopupType.RepositoryGroupName` and its dialog |
+| `app/src/lib/stores/app-store.ts` | `_generateAICommitMessage` next to `_generateCommitMessage` |
+| `app/src/ui/dispatcher/dispatcher.ts` | `generateAICommitMessage` |
+| `app/src/ui/changes/commit-message.tsx` | renders `AICommitMessageButton` in the action bar |
+| `app/src/models/popup.ts`, `app/src/ui/app.tsx`, `generate-commit-message-override-warning.tsx` | `useAIProvider` on the override warning |
+| `app/styles/ui/changes/_commit-message.scss` | `.ai-commit-message-button` added to the action bar button rules |
 | `app/src/main-process/app-window.ts` | calls `repairWindowStateFile()` before `windowStateKeeper` |
 
 ## PDF previews in diffs
@@ -132,18 +137,57 @@ Three providers: DeepSeek and OpenRouter over their OpenAI-compatible chat
 completions APIs (`fetch`, JSON mode, DeepSeek's thinking turned off), and
 Claude through the local `claude` CLI (`--print --output-format json`, no
 tools, `--setting-sources ""` so the user's hooks and settings don't run,
-no session saved), which uses the user's Claude subscription. The selected
-provider and per-provider model live in local storage (`ai-provider`,
-`ai-model-<provider>`); API keys are in the OS keychain through `TokenStore`
-(`GitHub Desktop - AI provider`, login = provider). `completeWithAI` runs a
-prompt on the selected provider and throws `AIProviderError` with a message
-meant for the user.
+no session saved), which uses the user's Claude subscription.
 
-**Settings.** Options → AI (`ui/preferences/ai.tsx`) picks the provider,
-the model (free text plus suggestions) and the key, with a connection test.
-Changes save immediately, unlike upstream tabs that save on OK. Features
-that need a provider call `openAISettings()` (`lib/ai/settings-link.ts`),
-which opens that tab through the dispatcher registered at startup.
+**Tasks.** Each feature is an `AITask` (`translation`, `commit-message`)
+with its own provider and model, in local storage
+(`ai-task-<task>-provider`, `ai-task-<task>-model`; no model stored means
+the provider's default). A task without a provider is off. The settings
+from before tasks (`ai-provider`, `ai-model-<provider>`) are read as the
+translation task's until it's changed. API keys are per provider, in the OS
+keychain through `TokenStore` (`GitHub Desktop - AI provider`, login =
+provider). `completeWithAI(task, request)` runs a prompt with the task's
+provider and model and throws `AIProviderError` with a message meant for the
+user; `isAIConfigured(task)` says whether the task can run.
+
+**Settings.** Options → AI (`ui/preferences/ai.tsx`) has two parts.
+Features: per task a provider (or Off), a model (free text plus
+suggestions), a test with that provider and model, and for commit messages
+the language. Providers: the DeepSeek and OpenRouter keys and where the
+`claude` command was found. Changes save immediately, unlike upstream tabs
+that save on OK. Features that need a provider call `openAISettings()`
+(`lib/ai/settings-link.ts`), which opens that tab through the dispatcher
+registered at startup; `getRegisteredDispatcher()` gives fork components
+without a dispatcher prop the same one.
+
+## Commit messages
+
+A sparkle button in the commit message action bar
+(`ui/changes/ai-commit-message-button.tsx`, placed next to Copilot's in
+`commit-message.tsx`) writes the title and description with the
+commit-message task's provider. Its tooltip names the provider and model;
+while a message is being written it turns into a stop button.
+
+The flow reuses upstream's Copilot plumbing through
+`AppStore._generateAICommitMessage`: without a usable provider it opens
+Options → AI; if a message was typed it shows upstream's override warning
+(`GenerateCommitMessageOverrideWarning` with `useAIProvider`, which hides
+the Copilot tip and generates through the fork on confirm, and respects
+"don't show again"); then `withIsGeneratingCommitMessage` (the spinner on
+the commit button and the abort signal the stop button fires),
+`getFilesDiffText` for the selected files (or against the amended commit's
+parent) and `_setCommitMessage`. Nothing is committed.
+
+`lib/ai/commit-message.ts` builds the instructions: the language (Turkish by
+default, English as the alternative, `ai-commit-message-language`), an
+imperative title of at most 72 characters without a type prefix or a
+period, a description of why in short paragraphs, the diff treated as data,
+and a JSON answer read with upstream's `parseCopilotCommitMessage`. Diffs
+over 60,000 characters are cut at a line with a note saying so.
+
+Tests: `app/test/unit/ai-tasks-test.ts`; `app/test/e2e/ai-commit-message.e2e.ts`
+sets the providers in the real Options dialog, writes a message through the
+local `claude` CLI and checks the override warning and stopping.
 
 ## Turkish translation of text documents
 

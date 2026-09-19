@@ -1,18 +1,64 @@
 // Options → AI, see app/src/ui/preferences/ai.tsx.
 
 #preferences .ai-preferences {
+  h2 + .settings-description {
+    margin-top: 0;
+  }
+
+  h2:not(:first-child) {
+    margin-top: var(--spacing-double);
+  }
+
+  .ai-task-list,
   .ai-provider-list {
     display: flex;
     flex-direction: column;
+    margin: var(--spacing) 0 var(--spacing-double);
+  }
+
+  // Features and providers are separated by rules, not boxes, so the
+  // dialog stays as flat as the other tabs
+  .ai-task,
+  .ai-provider {
+    display: flex;
+    flex-direction: column;
     gap: var(--spacing);
-    margin: var(--spacing-double) 0;
+    padding: var(--spacing) 0;
+
+    & + .ai-task,
+    & + .ai-provider {
+      border-top: var(--base-border);
+    }
+  }
+
+  .ai-task-heading {
+    h3 {
+      margin: 0;
+      font-size: var(--font-size);
+      font-weight: var(--font-weight-semibold);
+    }
+
+    p {
+      margin: 1px 0 0;
+      font-size: var(--font-size-sm);
+      color: var(--text-secondary-color);
+    }
+  }
+
+  .ai-task-fields {
+    display: flex;
+    gap: var(--spacing);
+
+    > * {
+      flex: 1;
+      min-width: 0;
+    }
   }
 
   .ai-provider-label {
-    display: inline-flex;
+    display: flex;
     flex-direction: column;
     gap: 1px;
-    vertical-align: top;
   }
 
   .ai-provider-name {
@@ -22,14 +68,6 @@
   .ai-provider-summary {
     font-size: var(--font-size-sm);
     color: var(--text-secondary-color);
-  }
-
-  .ai-provider-settings {
-    display: flex;
-    flex-direction: column;
-    gap: var(--spacing-double);
-    padding-top: var(--spacing-double);
-    border-top: var(--base-border);
   }
 
   .ai-model-suggestions {

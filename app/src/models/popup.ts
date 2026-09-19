@@ -507,6 +507,8 @@ export type PopupDetail =
       type: PopupType.GenerateCommitMessageOverrideWarning
       repository: Repository
       filesSelected: ReadonlyArray<WorkingDirectoryFileChange>
+      /** Generate with the fork's AI provider instead of Copilot */
+      useAIProvider?: boolean
     }
   | {
       type: PopupType.GenerateCommitMessageDisclaimer
