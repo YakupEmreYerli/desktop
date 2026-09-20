@@ -49,6 +49,10 @@ notes are in `changelog.json` and on
 
 ### Fixed
 
+- The repository list shows the uncommitted changes dot and the ahead/behind
+  arrows as soon as it opens, and keeps them up to date while it's open;
+  before, they turned up minutes later or only once a repository had been
+  opened.
 - The window's size is remembered on Linux under Wayland with several
   monitors; before, it opened at the default size every time.
 

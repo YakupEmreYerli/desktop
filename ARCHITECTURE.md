@@ -38,6 +38,8 @@ conflicts.
 | `app/src/models/popup.ts`, `app/src/ui/app.tsx`, `generate-commit-message-override-warning.tsx` | `useAIProvider` on the override warning |
 | `app/styles/ui/changes/_commit-message.scss` | `.ai-commit-message-button` added to the action bar button rules |
 | `app/src/main-process/app-window.ts` | calls `repairWindowStateFile()` before `windowStateKeeper` |
+| `app/src/lib/stores/app-store.ts` | `refreshLocalIndicatorsForAllRepositories()` when the repository list opens and shortly after startup; `localRepositoryStateLookup` replaced instead of mutated |
+| `app/src/ui/repositories-list/repositories-list.tsx`, `repository-list-item.tsx` | the indicator state invalidates the list and the item redraws when it changes |
 
 ## PDF previews in diffs
 
@@ -373,6 +375,25 @@ Styles: `_repository-groups.scss`. Tests: `app/test/unit/repository-groups-test.
 `XDG_CONFIG_HOME`, runs the real CLI next to it, and replaces the main
 process's `Menu.popup` with a recorder so the tests can click context menu
 items.
+
+## Repository list indicators
+
+The dot for uncommitted changes and the ahead/behind arrows in the repository
+list come from `localRepositoryStateLookup` in the app store.
+`RepositoryIndicatorUpdater` refreshes them every fifteen minutes, one
+repository at a time, fetching from the remote for each of them, which is far
+too slow to have anything on screen when the list is opened.
+
+`AppStore.refreshLocalIndicatorsForAllRepositories()` is the cheap half of
+that work: `git status` for every repository, ten at a time
+(`app/src/lib/for-each-parallel.ts`), no network. It runs five seconds after
+startup and again whenever the repository list is opened, and the fetching
+updater carries on behind it.
+
+Two things kept the result off the screen. The list memoizes its groups on the
+identity of `localRepositoryStateLookup`, so the map is now replaced rather
+than written to, and `RepositoryListItem.shouldComponentUpdate` only looked at
+the repository's id, so it now also compares the indicators.
 
 ## Window size on Wayland
 
