@@ -16,6 +16,7 @@ import {
 import { MenuEvent } from './menu'
 import { URLActionType } from '../lib/parse-app-url'
 import { ILaunchStats } from '../lib/stats'
+import { ISystemHeaderColors } from '../lib/system-header-colors'
 import { menuFromElectronMenu } from '../models/app-menu'
 import { now } from './now'
 import * as path from 'path'
@@ -310,6 +311,15 @@ export class AppWindow {
     this.show()
 
     ipcWebContents.send(this.window.webContents, 'cli-action', action)
+  }
+
+  /** Send the desktop environment's header colours to the renderer. */
+  public sendSystemHeaderColors(colors: ISystemHeaderColors | null) {
+    ipcWebContents.send(
+      this.window.webContents,
+      'system-header-colors-changed',
+      colors
+    )
   }
 
   /** Send the app launch timing stats to the renderer. */

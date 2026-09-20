@@ -40,6 +40,11 @@ conflicts.
 | `app/src/main-process/app-window.ts` | calls `repairWindowStateFile()` before `windowStateKeeper` |
 | `app/src/lib/stores/app-store.ts` | `refreshLocalIndicatorsForAllRepositories()` when the repository list opens and shortly after startup; `localRepositoryStateLookup` replaced instead of mutated |
 | `app/src/ui/repositories-list/repositories-list.tsx`, `repository-list-item.tsx` | the indicator state invalidates the list and the item redraws when it changes |
+| `app/src/main-process/main.ts` | `get-system-header-colors` handler, `watchKDEHeaderColors` while the window is open |
+| `app/src/main-process/app-window.ts` | `sendSystemHeaderColors` |
+| `app/src/lib/ipc-shared.ts` | `get-system-header-colors`, `system-header-colors-changed` |
+| `app/src/ui/index.tsx` | `initializeSystemHeaderColors()` |
+| `app/styles/ui/window/_title-bar.scss` | the menu bar row under `body.system-header-colors` |
 
 ## PDF previews in diffs
 
@@ -394,6 +399,24 @@ Two things kept the result off the screen. The list memoizes its groups on the
 identity of `localRepositoryStateLookup`, so the map is now replaced rather
 than written to, and `RepositoryListItem.shouldComponentUpdate` only looked at
 the repository's id, so it now also compares the indicators.
+
+## Menu bar colour from the desktop
+
+On Linux the menu bar (`File Edit View …`) is the app's first row, directly
+under the window's titlebar, and the two used to be different colours. In a
+KDE session it now takes the colour the desktop paints headers with, so they
+read as one strip.
+
+`app/src/main-process/kde-header-colors.ts` reads `BackgroundNormal` and
+`ForegroundNormal` from the `[Colors:Header]` group of `kdeglobals` (falling
+back to `[Colors:Window]` for schemes from before that group existed) and
+watches the directory for changes, since KDE replaces the file rather than
+writing over it. `app/src/ui/lib/system-header-colors.ts` puts them on
+`document.body` as `--system-header-background-color` and
+`--system-header-text-color` with a `system-header-colors` class, which is
+what the rule in `_title-bar.scss` hangs off. Nothing else in the app changes
+colour. Outside KDE, or when the scheme can't be read, the class isn't there
+and the theme's own colours stand.
 
 ## Window size on Wayland
 

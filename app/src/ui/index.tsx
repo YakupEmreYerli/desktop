@@ -66,6 +66,7 @@ import {
   ApplicationTheme,
   supportsSystemThemeChanges,
 } from './lib/application-theme'
+import { initializeSystemHeaderColors } from './lib/system-header-colors'
 import { trampolineUIHelper } from '../lib/trampoline/trampoline-ui-helper'
 import { AliveStore } from '../lib/stores/alive-store'
 import { NotificationsStore } from '../lib/stores/notifications-store'
@@ -355,6 +356,10 @@ dispatcher.registerErrorHandler(discardChangesHandler)
 dispatcher.registerErrorHandler(secretScanningPushProtectionErrorHandler)
 
 document.body.classList.add(`platform-${process.platform}`)
+
+initializeSystemHeaderColors().catch(e =>
+  log.error('Could not read the desktop environment header colours', e)
+)
 
 dispatcher.initializeAppFocusState()
 

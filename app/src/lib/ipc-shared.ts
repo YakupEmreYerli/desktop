@@ -17,6 +17,7 @@ import { DesktopNotificationPermission } from 'desktop-notifications'
 import { NotificationCallback } from 'desktop-notifications'
 import { DesktopAliveEvent } from './stores/alive-store'
 import { CLIAction } from './cli-action'
+import { ISystemHeaderColors } from './system-header-colors'
 
 /**
  * Defines the simplex IPC channel names we use from the renderer
@@ -56,6 +57,7 @@ export type RequestChannels = {
   error: (crashDetails: ICrashDetails) => void
   'zoom-factor-changed': (zoomFactor: number) => void
   'app-menu': (menu: IMenu) => void
+  'system-header-colors-changed': (colors: ISystemHeaderColors | null) => void
   'launch-timing-stats': (stats: ILaunchStats) => void
   'url-action': (action: URLActionType) => void
   'cli-action': (action: CLIAction) => void
@@ -100,6 +102,7 @@ export type RequestChannels = {
 export type RequestResponseChannels = {
   'get-path': (path: PathType) => Promise<string>
   'get-app-architecture': () => Promise<Architecture>
+  'get-system-header-colors': () => Promise<ISystemHeaderColors | null>
   'get-app-path': () => Promise<string>
   'get-exec-path': () => Promise<string>
   'is-running-under-arm64-translation': () => Promise<boolean>

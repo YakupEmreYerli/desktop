@@ -160,3 +160,18 @@
     }
   }
 }
+
+// The menu bar is the app's first row, right under the window's titlebar. In
+// a KDE session it takes the colour the desktop paints headers with, so the
+// two rows read as one, the way they do in Konsole and the rest of KDE.
+@include linux-context {
+  &.system-header-colors #desktop-app-title-bar {
+    background: var(--system-header-background-color);
+
+    #app-menu-bar {
+      --app-menu-button-color: var(--system-header-text-color);
+      --app-menu-button-hover-color: var(--system-header-text-color);
+      --app-menu-button-hover-background-color: color-mix(in srgb, var(--system-header-background-color) 85%, var(--system-header-text-color));
+    }
+  }
+}

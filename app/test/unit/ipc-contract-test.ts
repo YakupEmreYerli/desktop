@@ -42,6 +42,7 @@ describe('IPC channel contract', () => {
     'error',
     'zoom-factor-changed',
     'app-menu',
+    'system-header-colors-changed',
     'launch-timing-stats',
     'url-action',
     'cli-action',
@@ -74,6 +75,7 @@ describe('IPC channel contract', () => {
   const expectedResponseChannels = [
     'get-path',
     'get-app-architecture',
+    'get-system-header-colors',
     'get-app-path',
     'get-exec-path',
     'is-running-under-arm64-translation',

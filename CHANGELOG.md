@@ -58,5 +58,8 @@ notes are in `changelog.json` and on
 
 ### Changed
 
+- In a KDE Plasma session the menu bar takes the colour of the window's
+  titlebar and follows it when the colour scheme changes, so the app's first
+  row and the titlebar above it match. Elsewhere nothing changes.
 - Changes filter popover: count badges, full-width rows, grouped options,
   and it stays open while toggling filters.
