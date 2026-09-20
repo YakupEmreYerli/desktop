@@ -355,6 +355,7 @@ import {
 import { getDefaultDir } from '../../ui/lib/default-dir'
 import { WorkflowPreferences } from '../../models/workflow-preferences'
 import { RepositoryIndicatorUpdater } from './helpers/repository-indicator-updater'
+import { forEachParallel } from '../for-each-parallel'
 import { isAttributableEmailFor } from '../email'
 import { TrashNameLabel } from '../../ui/lib/context-menu'
 import { GitError as DugiteError } from 'dugite'
@@ -543,6 +544,20 @@ const BackgroundFetchMinimumInterval = 30 * 60 * 1000
  */
 const InitialRepositoryIndicatorTimeout = 2 * 60 * 1000
 
+/**
+ * How many repositories we'll read the status of at the same time when
+ * refreshing the repository list indicators from local information.
+ */
+const MaxConcurrentLocalIndicatorRefreshes = 10
+
+/**
+ * How long to wait after startup before reading the local state of every
+ * repository, so that the repository list has its indicators ready by the
+ * time the user opens it. Long enough to stay out of the way of opening the
+ * selected repository.
+ */
+const InitialLocalIndicatorTimeout = 5 * 1000
+
 const MaxInvalidFoldersToDisplay = 3
 
 const lastThankYouKey = 'version-and-users-of-last-thank-you'
@@ -602,16 +617,18 @@ export class AppStore extends TypedBaseStore<IAppState> {
 
   private readonly repositoryIndicatorUpdater: RepositoryIndicatorUpdater
 
+  /** The in-flight refresh of the local repository list indicators, if any */
+  private refreshLocalIndicatorsPromise: Promise<void> | null = null
+
   private showWelcomeFlow = false
   private focusCommitMessage = false
   private currentFoldout: Foldout | null = null
   private currentBanner: Banner | null = null
   private emitQueued = false
 
-  private readonly localRepositoryStateLookup = new Map<
-    number,
-    ILocalRepositoryState
-  >()
+  // Replaced, never mutated: the repository list memoizes on this map's
+  // identity, so an in-place change would never reach the screen.
+  private localRepositoryStateLookup = new Map<number, ILocalRepositoryState>()
 
   /** Map from shortcut (e.g., :+1:) to on disk URL. */
   private emoji = new Map<string, Emoji>()
@@ -2672,6 +2689,14 @@ export class AppStore extends TypedBaseStore<IAppState> {
     this.accountsStore.refresh()
 
     this.updateMenuLabelsForSelectedRepository()
+
+    // Warm up the repository list indicators so that the dots and arrows are
+    // there the moment the list is first opened rather than a moment after.
+    window.setTimeout(() => {
+      if (this.repositoryIndicatorsEnabled) {
+        this.refreshLocalIndicatorsForAllRepositories()
+      }
+    }, InitialLocalIndicatorTimeout)
   }
 
   /**
@@ -4179,49 +4204,119 @@ export class AppStore extends TypedBaseStore<IAppState> {
     repository: Repository,
     status: IStatusResult | null
   ): Promise<void> {
-    const lookup = this.localRepositoryStateLookup
-
-    if (repository.missing) {
-      lookup.delete(repository.id)
+    if (repository.missing || status === null) {
+      this.clearLocalRepositoryState(repository)
       return
     }
 
-    if (status === null) {
-      lookup.delete(repository.id)
-      return
-    }
-
-    lookup.set(repository.id, {
+    this.setLocalRepositoryState(repository, {
       aheadBehind: status.branchAheadBehind || null,
       changedFilesCount: status.workingDirectory.files.length,
     })
   }
-  /**
-   * Refresh indicator in repository list for a specific repository
-   */
-  private refreshIndicatorForRepository = async (repository: Repository) => {
-    const lookup = this.localRepositoryStateLookup
 
-    if (repository.missing) {
-      lookup.delete(repository.id)
+  /** Set the repository list state for a repository */
+  private setLocalRepositoryState(
+    repository: Repository,
+    state: ILocalRepositoryState
+  ) {
+    const lookup = new Map(this.localRepositoryStateLookup)
+    lookup.set(repository.id, state)
+    this.localRepositoryStateLookup = lookup
+  }
+
+  /** Forget the repository list state of a repository */
+  private clearLocalRepositoryState(repository: Repository) {
+    if (!this.localRepositoryStateLookup.has(repository.id)) {
       return
+    }
+
+    const lookup = new Map(this.localRepositoryStateLookup)
+    lookup.delete(repository.id)
+    this.localRepositoryStateLookup = lookup
+  }
+  /**
+   * Refresh the repository list indicators for a specific repository using
+   * only local information, i.e. without talking to the remote.
+   *
+   * This is all the repository list needs in order to show the uncommitted
+   * changes dot and the ahead/behind arrows, and it's fast enough to run for
+   * every repository at once when the list is opened.
+   *
+   * Returns false if the repository is gone or its status couldn't be read,
+   * in which case there's no point in doing any further work on it.
+   */
+  private refreshLocalIndicatorForRepository = async (
+    repository: Repository
+  ): Promise<boolean> => {
+    if (repository.missing) {
+      this.clearLocalRepositoryState(repository)
+      return false
     }
 
     const exists = await pathExists(repository.path)
     if (!exists) {
-      lookup.delete(repository.id)
-      return
+      this.clearLocalRepositoryState(repository)
+      return false
     }
 
-    const gitStore = this.gitStoreCache.get(repository)
-    const status = await gitStore.loadStatus()
+    const status = await this.gitStoreCache.get(repository).loadStatus()
     if (status === null) {
-      lookup.delete(repository.id)
-      return
+      this.clearLocalRepositoryState(repository)
+      return false
     }
 
     this.updateSidebarIndicator(repository, status)
     this.emitUpdate()
+
+    return true
+  }
+
+  /**
+   * Refresh the repository list indicators for every repository from local
+   * information only, several repositories at a time.
+   *
+   * The periodic `RepositoryIndicatorUpdater` walks the repositories one by
+   * one and fetches from the remote for each of them, which takes long enough
+   * that the indicators trickle in minutes after the list was opened. This is
+   * the cheap half of that work, run when the user opens the repository list
+   * so that what the list shows is up to date as soon as it appears.
+   */
+  private refreshLocalIndicatorsForAllRepositories = () => {
+    if (this.refreshLocalIndicatorsPromise !== null) {
+      return this.refreshLocalIndicatorsPromise
+    }
+
+    const repositories = this.getRepositoriesForIndicatorRefresh()
+
+    const promise = forEachParallel(
+      repositories,
+      MaxConcurrentLocalIndicatorRefreshes,
+      async repository => {
+        await this.refreshLocalIndicatorForRepository(repository)
+      }
+    )
+      .catch(e =>
+        log.error('[AppStore] Failed refreshing repository indicators', e)
+      )
+      .then(() => {
+        this.refreshLocalIndicatorsPromise = null
+      })
+
+    this.refreshLocalIndicatorsPromise = promise
+
+    return promise
+  }
+
+  /**
+   * Refresh indicator in repository list for a specific repository
+   */
+  private refreshIndicatorForRepository = async (repository: Repository) => {
+    if (!(await this.refreshLocalIndicatorForRepository(repository))) {
+      return
+    }
+
+    const gitStore = this.gitStoreCache.get(repository)
 
     const lastPush = await inferLastPushForRepository(
       this.accounts,
@@ -4232,8 +4327,8 @@ export class AppStore extends TypedBaseStore<IAppState> {
     if (await this.shouldBackgroundFetch(repository, lastPush)) {
       const aheadBehind = await this.fetchForRepositoryIndicator(repository)
 
-      const existing = lookup.get(repository.id)
-      lookup.set(repository.id, {
+      const existing = this.localRepositoryStateLookup.get(repository.id)
+      this.setLocalRepositoryState(repository, {
         aheadBehind: aheadBehind,
         // We don't need to update changedFilesCount here since it was already
         // set when calling `updateSidebarIndicator()` with the status object.
@@ -4478,6 +4573,11 @@ export class AppStore extends TypedBaseStore<IAppState> {
       foldout.type === FoldoutType.Repository &&
       this.repositoryIndicatorsEnabled
     ) {
+      // The list is on screen now, so bring what it shows up to date right
+      // away instead of leaving it to the background updater, which only gets
+      // around to a repository once every fifteen minutes.
+      this.refreshLocalIndicatorsForAllRepositories()
+
       // N.B: RepositoryIndicatorUpdater.prototype.start is
       // idempotent.
       this.repositoryIndicatorUpdater.start()

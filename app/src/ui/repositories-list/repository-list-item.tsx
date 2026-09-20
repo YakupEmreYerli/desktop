@@ -109,12 +109,29 @@ export class RepositoryListItem extends React.Component<
     ) {
       return (
         nextProps.repository.id !== this.props.repository.id ||
-        nextProps.matches !== this.props.matches
+        nextProps.matches !== this.props.matches ||
+        // The indicators are refreshed in the background while the list is
+        // open, so an item has to redraw when they change and not just when
+        // it's a different repository.
+        nextProps.changedFilesCount !== this.props.changedFilesCount ||
+        aheadBehindChanged(nextProps.aheadBehind, this.props.aheadBehind)
       )
     } else {
       return true
     }
   }
+}
+
+const aheadBehindChanged = (x: IAheadBehind | null, y: IAheadBehind | null) => {
+  if (x === y) {
+    return false
+  }
+
+  if (x === null || y === null) {
+    return true
+  }
+
+  return x.ahead !== y.ahead || x.behind !== y.behind
 }
 
 const renderRepoIndicators: React.FunctionComponent<{

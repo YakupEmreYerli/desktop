@@ -343,6 +343,7 @@ export class RepositoriesList extends React.Component<
           groups={groups}
           invalidationProps={{
             repositories: this.props.repositories,
+            localRepositoryStateLookup: this.props.localRepositoryStateLookup,
             filterText: this.props.filterText,
             groupsLayout: this.state.groupsLayout,
           }}

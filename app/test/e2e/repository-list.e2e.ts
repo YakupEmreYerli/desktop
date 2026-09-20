@@ -364,7 +364,9 @@ test.describe('Repository groups', () => {
       'theta',
       'zeta',
     ])
-    expect(readGroupsFile().collapsed).toContain('group:Müşteri işleri')
+    await expect
+      .poll(() => readGroupsFile().collapsed)
+      .toContain('group:Müşteri işleri')
   })
 
   test('filtering finds repositories in collapsed groups', async () => {
@@ -474,9 +476,9 @@ test.describe('Repository groups', () => {
       'theta',
       'zeta',
     ])
-    expect(
-      readGroupsFile().groups.map((g: { name: string }) => g.name)
-    ).toEqual(['Müşteri işleri'])
+    await expect
+      .poll(() => readGroupsFile().groups.map((g: { name: string }) => g.name))
+      .toEqual(['Müşteri işleri'])
   })
 
   test('an empty group made in the app stays visible', async () => {
@@ -531,7 +533,8 @@ test.describe('Repository groups', () => {
     await headerMenu(page, 'Other')
     await clickMenu(app, ['Show recent group'])
     await expect.poll(() => readList(page)).toContain('# Recent')
-    expect(readGroupsFile().showRecent).toBe(true)
+    // The file is written after the app has updated, so poll for it
+    await expect.poll(() => readGroupsFile().showRecent).toBe(true)
   })
 
   test('a broken file falls back to the default list', async () => {
@@ -624,5 +627,48 @@ test.describe('Repository groups', () => {
 
   test('no errors in the app', () => {
     expect(pageErrors).toEqual([])
+  })
+})
+
+test.describe('Repository list indicators', () => {
+  test('uncommitted changes and unpushed commits show when the list opens', async () => {
+    // An uncommitted change in one repository...
+    fs.writeFileSync(path.join(repo('gamma'), 'README.md'), '# gamma changed\n')
+
+    // ...and a commit that hasn't made it to the tracked branch in another.
+    const remote = path.join(root, 'remotes', 'epsilon.git')
+    fs.mkdirSync(path.dirname(remote), { recursive: true })
+    execFileSync('git', ['init', '--bare', remote], { stdio: 'ignore', env })
+    const git = (...args: ReadonlyArray<string>) =>
+      execFileSync('git', args, {
+        cwd: repo('epsilon'),
+        stdio: 'ignore',
+        env,
+      })
+    git('remote', 'add', 'origin', remote)
+    git('push', '-u', 'origin', 'main')
+    fs.writeFileSync(path.join(repo('epsilon'), 'CHANGES.md'), 'ahead\n')
+    git('add', '.')
+    git('commit', '-m', 'Ahead of origin')
+
+    await closeRepositoryList(page)
+    await openRepositoryList(page)
+
+    const indicator = (name: string, className: string) =>
+      page
+        .locator('.repository-list .repository-list-item', {
+          has: page.locator('.name', { hasText: new RegExp(`^${name}$`) }),
+        })
+        .locator(className)
+
+    // The short timeout is the point of the test: opening the list refreshes
+    // the indicators itself instead of waiting for the background updater,
+    // which takes tens of seconds to get round to a repository.
+    await expect(indicator('gamma', '.change-indicator-wrapper')).toBeVisible({
+      timeout: 6_000,
+    })
+    await expect(indicator('epsilon', '.ahead-behind')).toBeVisible({
+      timeout: 6_000,
+    })
   })
 })
