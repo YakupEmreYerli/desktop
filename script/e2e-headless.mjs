@@ -24,9 +24,10 @@ if (command.length === 0) {
 const run = (...args) =>
   spawnSync(args[0], args.slice(1), { stdio: 'inherit' }).status ?? 1
 
-const hasKWin =
-  spawnSync('sh', ['-c', 'command -v kwin_wayland'], { stdio: 'ignore' })
-    .status === 0
+const has = binary =>
+  spawnSync('sh', ['-c', `command -v ${binary}`], { stdio: 'ignore' }).status === 0
+
+const hasKWin = has('kwin_wayland')
 
 if (process.env.DESKTOP_E2E_VISIBLE === '1' || !hasKWin) {
   process.exit(run(...command))
@@ -52,17 +53,28 @@ writeFileSync(
   { mode: 0o755 }
 )
 
-// KWin exits with the session, but with its own status, so the command's
-// status comes back through the file the session script writes.
-run(
+// The nested compositor must not touch the real session bus. Left alone it
+// registers the "kwin" global-shortcut component over the running desktop's,
+// and when it exits every shortcut (Alt+Tab, Meta+D, …) is dead until logout.
+// A private bus is the fix; --no-global-shortcuts alone is not enough, because
+// KWin scripts loaded inside the nested instance still reach the real bus.
+// DESKTOP_E2E_SHARE_BUS=1 opts out when a test genuinely needs the real bus.
+const isolateBus = process.env.DESKTOP_E2E_SHARE_BUS !== '1' && has('dbus-run-session')
+
+const compositor = [
   'kwin_wayland',
   '--virtual',
+  '--no-global-shortcuts',
   '--width',
   '1600',
   '--height',
   '1000',
-  `--exit-with-session=${session}`
-)
+  `--exit-with-session=${session}`,
+]
+
+// KWin exits with the session, but with its own status, so the command's
+// status comes back through the file the session script writes.
+run(...(isolateBus ? ['dbus-run-session', '--', ...compositor] : compositor))
 
 let status = 1
 
