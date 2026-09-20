@@ -16,7 +16,7 @@ import {
 import { MenuEvent } from './menu'
 import { URLActionType } from '../lib/parse-app-url'
 import { ILaunchStats } from '../lib/stats'
-import { ISystemHeaderColors } from '../lib/system-header-colors'
+import { ISystemHeaderStyle } from '../lib/system-header-style'
 import { menuFromElectronMenu } from '../models/app-menu'
 import { now } from './now'
 import * as path from 'path'
@@ -86,6 +86,13 @@ export class AppWindow {
 
     this.window = new BrowserWindow(windowOptions)
     addTrustedIPCSender(this.window.webContents)
+
+    if (__LINUX__) {
+      // The app draws the menu bar itself, the same way it does on Windows,
+      // so Electron shouldn't put its own on top of it. The menu stays set,
+      // which is what keeps the keyboard shortcuts working.
+      this.window.setMenuBarVisibility(false)
+    }
 
     installNotificationCallback(this.window)
 
@@ -314,10 +321,10 @@ export class AppWindow {
   }
 
   /** Send the desktop environment's header colours to the renderer. */
-  public sendSystemHeaderColors(colors: ISystemHeaderColors | null) {
+  public sendSystemHeaderStyle(colors: ISystemHeaderStyle | null) {
     ipcWebContents.send(
       this.window.webContents,
-      'system-header-colors-changed',
+      'system-header-style-changed',
       colors
     )
   }

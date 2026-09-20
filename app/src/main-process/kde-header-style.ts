@@ -2,7 +2,8 @@ import { readFile } from 'fs/promises'
 import { watch } from 'fs'
 import { homedir } from 'os'
 import * as Path from 'path'
-import { ISystemHeaderColors } from '../lib/system-header-colors'
+import { ISystemHeaderStyle } from '../lib/system-header-style'
+import { compensateChannelForDisplayGamma } from '../lib/display-gamma'
 
 /** How long to wait for the writes to settle before reading the file again */
 const ReloadDelay = 250
@@ -24,7 +25,9 @@ function configDirectory() {
 
 /**
  * A colour in kdeglobals is either `r,g,b`, `r,g,b,a` or a hex string,
- * depending on which version of KDE wrote it.
+ * depending on which version of KDE wrote it. It comes back as a CSS colour,
+ * compensated so that what lands on screen is the colour KDE asked for; see
+ * `compensateChannelForDisplayGamma`.
  */
 function parseColor(value: string | undefined): string | null {
   if (value === undefined) {
@@ -32,24 +35,32 @@ function parseColor(value: string | undefined): string | null {
   }
 
   const text = value.trim()
+  const hex = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(text)
+  let channels: Array<number>
 
-  if (/^#[0-9a-f]{3}$|^#[0-9a-f]{6}$|^#[0-9a-f]{8}$/i.test(text)) {
-    return text
+  if (hex !== null) {
+    const digits =
+      hex[1].length === 3
+        ? [...hex[1]].map(x => `${x}${x}`)
+        : [hex[1].slice(0, 2), hex[1].slice(2, 4), hex[1].slice(4, 6)]
+
+    channels = digits.map(x => parseInt(x, 16))
+  } else {
+    const parts = text.split(',').map(x => x.trim())
+
+    if (parts.length < 3 || parts.length > 4) {
+      return null
+    }
+
+    channels = parts.map(x => (/^\d+$/.test(x) ? parseInt(x, 10) : NaN))
+
+    if (channels.some(x => isNaN(x) || x < 0 || x > 255)) {
+      return null
+    }
   }
 
-  const parts = text.split(',').map(x => x.trim())
-
-  if (parts.length < 3 || parts.length > 4) {
-    return null
-  }
-
-  const numbers = parts.map(x => (/^\d+$/.test(x) ? parseInt(x, 10) : NaN))
-
-  if (numbers.some(x => isNaN(x) || x < 0 || x > 255)) {
-    return null
-  }
-
-  const [r, g, b, a] = numbers
+  const [r, g, b] = channels.slice(0, 3).map(compensateChannelForDisplayGamma)
+  const a = channels[3]
 
   return a === undefined
     ? `rgb(${r}, ${g}, ${b})`
@@ -94,11 +105,32 @@ function parseGroups(contents: string) {
 }
 
 /**
- * The colours of the current KDE colour scheme's header, or null when this
- * isn't a KDE session or the scheme doesn't say. KDE falls back to the window
- * colours for schemes made before the header group existed, and so do we.
+ * A KDE font is written as `family,size,…`, where the size is in points and
+ * the rest describes weight, style and hinting we don't need.
  */
-export async function getKDEHeaderColors(): Promise<ISystemHeaderColors | null> {
+function parseFont(value: string | undefined) {
+  const parts = value?.split(',') ?? []
+  const family = parts[0]?.trim()
+  const size = parts[1]?.trim()
+
+  if (family === undefined || family.length === 0) {
+    return { fontFamily: null, fontSize: null }
+  }
+
+  return {
+    fontFamily: family,
+    fontSize:
+      size !== undefined && /^\d+(\.\d+)?$/.test(size) ? `${size}pt` : null,
+  }
+}
+
+/**
+ * How KDE paints window headers and menus: the colours of the current colour
+ * scheme's header and the desktop's menu font. Null when this isn't a KDE
+ * session or the scheme doesn't say. KDE falls back to the window colours for
+ * schemes made before the header group existed, and so do we.
+ */
+export async function getKDEHeaderStyle(): Promise<ISystemHeaderStyle | null> {
   if (!isKDESession()) {
     return null
   }
@@ -113,18 +145,34 @@ export async function getKDEHeaderColors(): Promise<ISystemHeaderColors | null> 
   }
 
   const groups = parseGroups(contents)
+  const font = parseFont(groups.get('[General]')?.get('menuFont'))
 
-  for (const name of ['[Colors:Header]', '[Colors:Window]']) {
+  const colorsOf = (name: string) => {
     const group = groups.get(name)
     const background = parseColor(group?.get('BackgroundNormal'))
     const foreground = parseColor(group?.get('ForegroundNormal'))
 
-    if (background !== null && foreground !== null) {
-      return { background, foreground }
-    }
+    return background !== null && foreground !== null
+      ? { background, foreground }
+      : null
   }
 
-  return null
+  const header = colorsOf('[Colors:Header]') ?? colorsOf('[Colors:Window]')
+
+  if (header === null) {
+    return null
+  }
+
+  // KDE paints menus with the window colours
+  const menu = colorsOf('[Colors:Window]') ?? header
+
+  return {
+    background: header.background,
+    foreground: header.foreground,
+    menuBackground: menu.background,
+    menuForeground: menu.foreground,
+    ...font,
+  }
 }
 
 /** The path of the file KDE keeps the current colour scheme in */
@@ -140,7 +188,7 @@ export function kdeglobalsPath() {
  * kdeglobals instead of writing over it, which leaves a watcher on the file
  * looking at something nobody reads any more.
  */
-export function watchKDEHeaderColors(onChange: () => void): () => void {
+export function watchKDEHeaderStyle(onChange: () => void): () => void {
   if (!isKDESession()) {
     return () => {}
   }

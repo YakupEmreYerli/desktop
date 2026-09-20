@@ -14,7 +14,7 @@ import {
 import * as Fs from 'fs'
 
 import { AppWindow } from './app-window'
-import { getKDEHeaderColors, watchKDEHeaderColors } from './kde-header-colors'
+import { getKDEHeaderStyle, watchKDEHeaderStyle } from './kde-header-style'
 import { buildDefaultMenu, getAllMenuItems } from './menu'
 import { shellNeedsPatching, updateEnvironmentForProcess } from '../lib/shell'
 import { parseAppURL } from '../lib/parse-app-url'
@@ -54,6 +54,13 @@ import {
 import { initializeDesktopNotifications } from './notifications'
 import parseCommandLineArgs from 'minimist'
 import { CLIAction } from '../lib/cli-action'
+
+if (__LINUX__) {
+  // Chromium converts what it draws to the display's colour profile, which
+  // lifts dark colours enough that the app's menu bar doesn't match the
+  // window's titlebar right above it. Drawing plain sRGB keeps them equal.
+  app.commandLine.appendSwitch('force-color-profile', 'srgb')
+}
 
 app.setAppLogsPath()
 enableSourceMaps()
@@ -554,7 +561,7 @@ app.on('ready', () => {
     systemPreferences.getUserDefault('AppleActionOnDoubleClick', 'string')
   )
 
-  ipcMain.handle('get-system-header-colors', () => getKDEHeaderColors())
+  ipcMain.handle('get-system-header-style', () => getKDEHeaderStyle())
 
   ipcMain.handle('get-current-window-state', async () =>
     mainWindow?.getCurrentWindowState()
@@ -845,9 +852,9 @@ function createWindow() {
   // Follow the desktop environment's colour scheme while the window is open,
   // the way the rest of the desktop's applications do.
   window.onClosed(
-    watchKDEHeaderColors(() =>
-      getKDEHeaderColors()
-        .then(colors => window.sendSystemHeaderColors(colors))
+    watchKDEHeaderStyle(() =>
+      getKDEHeaderStyle()
+        .then(colors => window.sendSystemHeaderStyle(colors))
         .catch(e => log.debug(`Could not read the header colours: ${e}`))
     )
   )

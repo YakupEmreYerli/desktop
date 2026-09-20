@@ -49,6 +49,9 @@ notes are in `changelog.json` and on
 
 ### Fixed
 
+- Going full screen no longer shows the "unrecoverable error" dialog. Chromium
+  reports a harmless resize notice in a way the app couldn't tell apart from a
+  real crash.
 - The repository list shows the uncommitted changes dot and the ahead/behind
   arrows as soon as it opens, and keeps them up to date while it's open;
   before, they turned up minutes later or only once a repository had been
@@ -58,8 +61,9 @@ notes are in `changelog.json` and on
 
 ### Changed
 
-- In a KDE Plasma session the menu bar takes the colour of the window's
-  titlebar and follows it when the colour scheme changes, so the app's first
-  row and the titlebar above it match. Elsewhere nothing changes.
+- The app draws its own menu bar on Linux instead of leaving it to Electron,
+  and in a KDE Plasma session it takes the colour and font of the window's
+  titlebar and follows the colour scheme when it changes, so the app's first
+  row and the titlebar above it read as one. Elsewhere nothing changes.
 - Changes filter popover: count badges, full-width rows, grouped options,
   and it stays open while toggling filters.

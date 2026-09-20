@@ -44,7 +44,11 @@ conflicts.
 | `app/src/main-process/app-window.ts` | `sendSystemHeaderColors` |
 | `app/src/lib/ipc-shared.ts` | `get-system-header-colors`, `system-header-colors-changed` |
 | `app/src/ui/index.tsx` | `initializeSystemHeaderColors()` |
-| `app/styles/ui/window/_title-bar.scss` | the menu bar row under `body.system-header-colors` |
+| `app/styles/ui/window/_title-bar.scss` | the menu bar row under `body.system-header-style` |
+| `app/src/ui/app.tsx` | `renderTitlebar` and `renderAppMenuBar` follow `shouldRenderApplicationMenu()` instead of being Windows only |
+| `app/src/main-process/app-window.ts` | `setMenuBarVisibility(false)` on Linux |
+| `app/src/ui/index.tsx` | the resize loop notice is recognised when Chromium hands it over as a bare null |
+| `app/webpack.common.ts`, `app/webpack.production.ts` | filesystem cache, bundle report behind `DESKTOP_BUNDLE_REPORT` |
 
 ## PDF previews in diffs
 
@@ -403,20 +407,45 @@ the repository's id, so it now also compares the indicators.
 ## Menu bar colour from the desktop
 
 On Linux the menu bar (`File Edit View …`) is the app's first row, directly
-under the window's titlebar, and the two used to be different colours. In a
-KDE session it now takes the colour the desktop paints headers with, so they
-read as one strip.
+under the window's titlebar. Upstream leaves that row to Electron's own menu
+bar, which paints itself in a colour of Chromium's choosing and can't be
+styled, so the two rows never matched. The app now draws the menu itself, the
+way it already did on Windows: `App.renderTitlebar` and `renderAppMenuBar` go
+by `shouldRenderApplicationMenu()` (true everywhere but macOS) and
+`AppWindow` hides Electron's bar with `setMenuBarVisibility(false)`. The menu
+stays set, which is what keeps the keyboard shortcuts working.
 
-`app/src/main-process/kde-header-colors.ts` reads `BackgroundNormal` and
+In a KDE session the row then takes the colour the desktop paints headers
+with. `app/src/main-process/kde-header-style.ts` reads `BackgroundNormal` and
 `ForegroundNormal` from the `[Colors:Header]` group of `kdeglobals` (falling
-back to `[Colors:Window]` for schemes from before that group existed) and
+back to `[Colors:Window]` for schemes from before that group existed), the
+menu colours from `[Colors:Window]` and the menu font from `[General]`, and
 watches the directory for changes, since KDE replaces the file rather than
-writing over it. `app/src/ui/lib/system-header-colors.ts` puts them on
-`document.body` as `--system-header-background-color` and
-`--system-header-text-color` with a `system-header-colors` class, which is
-what the rule in `_title-bar.scss` hangs off. Nothing else in the app changes
-colour. Outside KDE, or when the scheme can't be read, the class isn't there
-and the theme's own colours stand.
+writing over it. `app/src/ui/lib/system-header-style.ts` puts the result on
+`document.body` as `--system-header-*` and `--system-menu-*` variables with a
+`system-header-style` class, which is what the rule in `_title-bar.scss` hangs
+off. Outside KDE the class isn't there and the theme's own colours stand.
+
+The colours are compensated on the way out, see
+`app/src/lib/display-gamma.ts`: Chromium's GPU rasteriser writes its output
+with a 2.2 gamma curve while the compositor draws the titlebar with the sRGB
+one, so #05182f landed on screen as #0d1e33 and the two rows were visibly
+different. Nothing short of `--disable-gpu` changed that, so the colour is
+converted into Chromium's space before it's handed to CSS. It's measured, not
+guessed, and it goes away with the Chromium behaviour that makes it necessary.
+
+## Build speed
+
+A production build used to start from nothing every time. The webpack configs
+now keep a filesystem cache under `node_modules/.cache`, which takes a rebuild
+after a one-file change from around three and a half minutes to six seconds,
+and the bundle size report is only written when `DESKTOP_BUNDLE_REPORT=1` asks
+for it.
+
+`script/linux-kur.sh --hizli` uses that: it compiles and copies the result over
+the installed app instead of packaging Electron again, around five seconds
+from change to a running app. A full `script/linux-kur.sh` is still what's
+needed when Electron or the dependencies change.
 
 ## Window size on Wayland
 

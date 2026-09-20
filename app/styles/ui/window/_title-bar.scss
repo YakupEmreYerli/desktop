@@ -15,6 +15,13 @@
     border-bottom: 1px solid #000;
   }
 
+  @include linux {
+    // The window has a real titlebar of its own; this row is the menu bar,
+    // and the compositor handles dragging, so it isn't a drag region.
+    -webkit-app-region: no-drag;
+    background: var(--toolbar-background-color);
+  }
+
   @include win32 {
     height: var(--win32-title-bar-height);
     background: var(--win32-title-bar-background-color);
@@ -165,12 +172,26 @@
 // a KDE session it takes the colour the desktop paints headers with, so the
 // two rows read as one, the way they do in Konsole and the rest of KDE.
 @include linux-context {
-  &.system-header-colors #desktop-app-title-bar {
+  &.system-header-style #desktop-app-title-bar {
     background: var(--system-header-background-color);
 
     #app-menu-bar {
+      // The menu reads as part of the window's titlebar, so it uses the
+      // desktop's own menu font rather than the app's.
+      font-family: var(--system-header-font-family, inherit);
+      font-size: var(--system-header-font-size, inherit);
+
       --app-menu-button-color: var(--system-header-text-color);
       --app-menu-button-hover-color: var(--system-header-text-color);
+
+      // An open menu and its pane are one shape, in the colour the desktop
+      // paints its own menus with.
+      --app-menu-button-active-color: var(--system-menu-text-color);
+      --app-menu-button-active-background-color: var(--system-menu-background-color);
+      --app-menu-pane-background-color: var(--system-menu-background-color);
+      --app-menu-pane-color: var(--system-menu-text-color);
+      --app-menu-pane-secondary-color: color-mix(in srgb, var(--system-menu-text-color) 70%, var(--system-menu-background-color));
+
       --app-menu-button-hover-background-color: color-mix(in srgb, var(--system-header-background-color) 85%, var(--system-header-text-color));
     }
   }

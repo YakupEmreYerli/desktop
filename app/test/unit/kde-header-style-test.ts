@@ -2,7 +2,7 @@ import { describe, it, TestContext } from 'node:test'
 import assert from 'node:assert'
 import { writeFile } from 'fs/promises'
 import * as Path from 'path'
-import { getKDEHeaderColors } from '../../src/main-process/kde-header-colors'
+import { getKDEHeaderStyle } from '../../src/main-process/kde-header-style'
 import { createTempDirectory } from '../helpers/temp'
 
 /**
@@ -33,12 +33,19 @@ async function setupColorScheme(
   }
 }
 
-describe('getKDEHeaderColors', () => {
+describe('getKDEHeaderStyle', () => {
   it('reads the header colours written as hex', async t => {
     await setupColorScheme(
       t,
       'KDE',
       [
+        '[General]',
+        'menuFont=Inter,10,-1,5,400,0,0,0,0,0,0,0,0,0,0,1',
+        '',
+        '[Colors:Window]',
+        'BackgroundNormal=#05182f',
+        'ForegroundNormal=#95acd2',
+        '',
         '[Colors:Header]',
         'BackgroundNormal=#05182f',
         'ForegroundNormal=#95acd2',
@@ -49,9 +56,14 @@ describe('getKDEHeaderColors', () => {
       ].join('\n')
     )
 
-    assert.deepStrictEqual(await getKDEHeaderColors(), {
-      background: '#05182f',
-      foreground: '#95acd2',
+    // The colours come back compensated for how Chromium draws them
+    assert.deepStrictEqual(await getKDEHeaderStyle(), {
+      background: 'rgb(1, 17, 43)',
+      foreground: 'rgb(150, 173, 211)',
+      menuBackground: 'rgb(1, 17, 43)',
+      menuForeground: 'rgb(150, 173, 211)',
+      fontFamily: 'Inter',
+      fontSize: '10pt',
     })
   })
 
@@ -67,9 +79,13 @@ describe('getKDEHeaderColors', () => {
       ].join('\n')
     )
 
-    assert.deepStrictEqual(await getKDEHeaderColors(), {
-      background: 'rgb(35, 38, 41)',
+    assert.deepStrictEqual(await getKDEHeaderStyle(), {
+      background: 'rgb(30, 33, 36)',
       foreground: 'rgba(252, 252, 252, 0.502)',
+      menuBackground: 'rgb(30, 33, 36)',
+      menuForeground: 'rgba(252, 252, 252, 0.502)',
+      fontFamily: null,
+      fontSize: null,
     })
   })
 
@@ -84,9 +100,13 @@ describe('getKDEHeaderColors', () => {
       ].join('\n')
     )
 
-    assert.deepStrictEqual(await getKDEHeaderColors(), {
-      background: 'rgb(35, 38, 41)',
+    assert.deepStrictEqual(await getKDEHeaderStyle(), {
+      background: 'rgb(30, 33, 36)',
       foreground: 'rgb(252, 252, 252)',
+      menuBackground: 'rgb(30, 33, 36)',
+      menuForeground: 'rgb(252, 252, 252)',
+      fontFamily: null,
+      fontSize: null,
     })
   })
 
@@ -101,7 +121,7 @@ describe('getKDEHeaderColors', () => {
       ].join('\n')
     )
 
-    assert.notEqual(await getKDEHeaderColors(), null)
+    assert.notEqual(await getKDEHeaderStyle(), null)
   })
 
   it('returns null when the colours make no sense', async t => {
@@ -111,13 +131,13 @@ describe('getKDEHeaderColors', () => {
       ['[Colors:Header]', 'BackgroundNormal=lilac'].join('\n')
     )
 
-    assert.equal(await getKDEHeaderColors(), null)
+    assert.equal(await getKDEHeaderStyle(), null)
   })
 
   it('returns null when there is no colour scheme file', async t => {
     await setupColorScheme(t, 'KDE')
 
-    assert.equal(await getKDEHeaderColors(), null)
+    assert.equal(await getKDEHeaderStyle(), null)
   })
 
   it('returns null outside a KDE session', async t => {
@@ -131,6 +151,6 @@ describe('getKDEHeaderColors', () => {
       ].join('\n')
     )
 
-    assert.equal(await getKDEHeaderColors(), null)
+    assert.equal(await getKDEHeaderStyle(), null)
   })
 })
