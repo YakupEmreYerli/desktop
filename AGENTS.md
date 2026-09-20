@@ -48,6 +48,12 @@ Linux system requirements: `docs/contributing/setup-linux.md` (upstream).
 
 ## E2E tests and the developer's machine
 
+`yarn test:e2e:run` runs the specs inside a nested, invisible KWin session
+(`script/e2e-headless.mjs`), so the windows they open don't land on top of
+whatever you're doing and take the keyboard and mouse with them. Set
+`DESKTOP_E2E_VISIBLE=1` to watch them, and note that calling `npx playwright
+test` yourself skips all of this.
+
 Anything that launches the app for a test, a spec or a one-off script,
 takes its environment from `isolatedEnvironment()` in
 `app/test/e2e/isolated-environment.ts` and calls `guardRealGitConfig()`.

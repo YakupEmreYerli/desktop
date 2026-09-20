@@ -14,9 +14,17 @@ import { test } from '@playwright/test'
  * `~/.gitconfig`, and their next commits in every repository carry the test
  * identity. Every spec that launches the app gets its environment here.
  */
-export function isolatedEnvironment(root: string): NodeJS.ProcessEnv {
+export function isolatedEnvironment(root: string): Record<string, string> {
+  // Playwright's launch options want an environment without undefined values,
+  // which is what process.env is typed as.
+  const inherited = Object.fromEntries(
+    Object.entries(process.env).filter(
+      (entry): entry is [string, string] => entry[1] !== undefined
+    )
+  )
+
   return {
-    ...process.env,
+    ...inherited,
     XDG_CONFIG_HOME: path.join(root, 'config'),
     GIT_CONFIG_GLOBAL: path.join(root, '.gitconfig'),
     GIT_CONFIG_SYSTEM: path.join(root, '.gitconfig-system'),
