@@ -66,7 +66,7 @@ import {
   ApplicationTheme,
   supportsSystemThemeChanges,
 } from './lib/application-theme'
-import { initializeSystemHeaderColors } from './lib/system-header-colors'
+import { initializeSystemHeaderStyle } from './lib/system-header-style'
 import { trampolineUIHelper } from '../lib/trampoline/trampoline-ui-helper'
 import { AliveStore } from '../lib/stores/alive-store'
 import { NotificationsStore } from '../lib/stores/notifications-store'
@@ -192,20 +192,42 @@ const sendErrorWithContext = (
 const resizeLoopCompletedMessage =
   'ResizeObserver loop completed with undelivered notifications.'
 
+// Chromium hands the uncaught exception handler below a bare null for the
+// resize loop notice, so the window's error event is the only place its
+// message can still be read. Any large layout change sets this off, going
+// full screen for one, and without this the app shows its "unrecoverable
+// error" dialog over a notice that means nothing.
+let resizeLoopNoticeAt = 0
+
+window.addEventListener(
+  'error',
+  event => {
+    if (event.message?.includes(resizeLoopCompletedMessage)) {
+      resizeLoopNoticeAt = Date.now()
+      event.preventDefault()
+    }
+  },
+  true
+)
+
+/** How long after the window's error event a null counts as that notice */
+const ResizeLoopNoticeWindow = 1000
+
+const isResizeLoopNotice = (error: unknown) =>
+  error === resizeLoopCompletedMessage ||
+  (error !== null &&
+    typeof error === 'object' &&
+    'message' in error &&
+    error.message === resizeLoopCompletedMessage) ||
+  (error === null && Date.now() - resizeLoopNoticeAt < ResizeLoopNoticeWindow)
+
 const onUncaughtException = (error: unknown) => {
-  // This is a known issue with the ResizeObserver API in Chromium 132 which is
-  // fixed in 133 that we can safely ignore.
-  // See: https://issues.chromium.org/issues/391393420
-  if (
-    error === resizeLoopCompletedMessage ||
-    (error &&
-      typeof error === 'object' &&
-      'message' in error &&
-      error.message === resizeLoopCompletedMessage)
-  ) {
+  // This is a known issue with the ResizeObserver API, harmless and out of our
+  // hands. See: https://issues.chromium.org/issues/391393420
+  if (isResizeLoopNotice(error)) {
     sendNonFatalException(
       'resizeObserverLoopCompleted',
-      withSourceMappedStack(error)
+      withSourceMappedStack(error ?? new Error(resizeLoopCompletedMessage))
     )
     return
   }
@@ -357,7 +379,7 @@ dispatcher.registerErrorHandler(secretScanningPushProtectionErrorHandler)
 
 document.body.classList.add(`platform-${process.platform}`)
 
-initializeSystemHeaderColors().catch(e =>
+initializeSystemHeaderStyle().catch(e =>
   log.error('Could not read the desktop environment header colours', e)
 )
 
