@@ -23,6 +23,7 @@ node script/test.mjs <file>         # a single test file
 npx playwright test --config app/test/e2e/playwright.config.ts <name>
                                     # e2e against the packaged app in dist/
 script/linux-kur.sh                 # production build + install for this user
+script/linux-kur.sh --hizli         # compile only, refresh the install (~5s)
 ```
 
 Linux system requirements: `docs/contributing/setup-linux.md` (upstream).

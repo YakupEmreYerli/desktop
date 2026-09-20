@@ -29,16 +29,23 @@ const rendererConfig = merge({}, common.renderer, config, {
   plugins: [
     // Necessary to be able to use MiniCssExtractPlugin as a loader.
     new MiniCssExtractPlugin({ filename: 'renderer.css' }),
-    new BundleAnalyzerPlugin({
-      // this generates the static HTML file to view afterwards, rather
-      // than disrupting the user
-      analyzerMode: 'static',
-      openAnalyzer: false,
-      // we can't emit this directly to the dist directory because the
-      // build script immediately blows away dist after webpack is done
-      // compiling the source into bundles
-      reportFilename: 'renderer.report.html',
-    }),
+    // Nobody reads the bundle report on a build they're waiting on, and
+    // writing it costs seconds every time, so it's asked for by name:
+    // DESKTOP_BUNDLE_REPORT=1 yarn build:prod
+    ...(process.env.DESKTOP_BUNDLE_REPORT === '1'
+      ? [
+          new BundleAnalyzerPlugin({
+            // this generates the static HTML file to view afterwards, rather
+            // than disrupting the user
+            analyzerMode: 'static',
+            openAnalyzer: false,
+            // we can't emit this directly to the dist directory because the
+            // build script immediately blows away dist after webpack is done
+            // compiling the source into bundles
+            reportFilename: 'renderer.report.html',
+          }),
+        ]
+      : []),
   ],
 })
 

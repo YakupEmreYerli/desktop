@@ -3,6 +3,8 @@
 #
 #   script/linux-kur.sh            derle + kur
 #   script/linux-kur.sh --derleme  derlemeyi atla, dist/ içindekini kur
+#   script/linux-kur.sh --hizli    sadece kodu derle, kurulu uygulamanın
+#                                  üstüne yaz (Electron'u paketlemez)
 #
 # Uygulama adı "GitHub Desktop" kaldığı için ayarlar, depo listesi ve oturum
 # ~/.config/GitHub Desktop içinden aynen devam eder.
@@ -15,7 +17,37 @@ bin="$HOME/.local/bin/github-desktop"
 cli="$HOME/.local/bin/github"
 masaustu="$HOME/.local/share/applications/github-desktop.desktop"
 
-if [[ "${1:-}" != "--derleme" ]]; then
+kip="${1:-}"
+
+# Hızlı kip: kod değiştiğinde Electron'u yeniden paketlemenin anlamı yok,
+# kurulu uygulamanın içindeki derleme çıktısını tazelemek yeter. Electron
+# sürümü ya da bağımlılıklar değiştiyse tam kurulum gerekir.
+if [[ "$kip" == "--hizli" ]]; then
+  if [[ ! -x "$hedef/desktop" ]]; then
+    echo "Önce tam kurulum gerekiyor: script/linux-kur.sh" >&2
+    exit 1
+  fi
+
+  if pgrep -f "^$hedef/desktop" >/dev/null; then
+    echo "GitHub Desktop açık; kapatıp yeniden çalıştır." >&2
+    exit 1
+  fi
+
+  cd "$kok"
+  # shellcheck disable=SC1091
+  source "$HOME/.nvm/nvm.sh" && nvm use >/dev/null
+  yarn compile:prod
+
+  for dosya in "$kok"/out/*.js "$kok"/out/*.css "$kok"/out/*.map "$kok"/out/*.html; do
+    [[ -e "$dosya" ]] || continue
+    cp -a "$dosya" "$hedef/resources/app/"
+  done
+
+  echo "Tazelendi: $(git -C "$kok" rev-parse --short HEAD) → $hedef"
+  exit 0
+fi
+
+if [[ "$kip" != "--derleme" ]]; then
   cd "$kok"
   # shellcheck disable=SC1091
   source "$HOME/.nvm/nvm.sh" && nvm use >/dev/null

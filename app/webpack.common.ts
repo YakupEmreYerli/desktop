@@ -11,6 +11,14 @@ const outputDir = 'out'
 export const replacements = getReplacements()
 
 const commonConfig: webpack.Configuration = {
+  // Without a cache every build starts from nothing, which is a minute of
+  // compiling even when a single file moved. With one, webpack only redoes
+  // the modules that changed. Each config below names itself so that they
+  // don't share (and keep invalidating) the same cache.
+  cache: {
+    type: 'filesystem',
+    buildDependencies: { config: [__filename] },
+  },
   optimization: {
     emitOnErrors: false,
   },
@@ -54,6 +62,7 @@ const commonConfig: webpack.Configuration = {
 }
 
 export const main = merge({}, commonConfig, {
+  name: 'main',
   entry: { main: path.resolve(__dirname, 'src/main-process/main') },
   target: 'electron-main',
   plugins: [
@@ -66,6 +75,7 @@ export const main = merge({}, commonConfig, {
 })
 
 export const renderer = merge({}, commonConfig, {
+  name: 'renderer',
   entry: { renderer: path.resolve(__dirname, 'src/ui/index') },
   target: 'electron-renderer',
   module: {
@@ -108,6 +118,7 @@ export const renderer = merge({}, commonConfig, {
 })
 
 export const crash = merge({}, commonConfig, {
+  name: 'crash',
   entry: { crash: path.resolve(__dirname, 'src/crash/index') },
   target: 'electron-renderer',
   plugins: [
@@ -125,6 +136,7 @@ export const crash = merge({}, commonConfig, {
 })
 
 export const cli = merge({}, commonConfig, {
+  name: 'cli',
   entry: { cli: path.resolve(__dirname, 'src/cli/main') },
   target: 'node',
   plugins: [
@@ -137,6 +149,7 @@ export const cli = merge({}, commonConfig, {
 })
 
 export const highlighter = merge({}, commonConfig, {
+  name: 'highlighter',
   entry: { highlighter: path.resolve(__dirname, 'src/highlighter/index') },
   output: {
     library: {
