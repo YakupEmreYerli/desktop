@@ -96,7 +96,7 @@ export class About extends React.Component<IAboutProps> {
   }
 
   private renderUpdateButton() {
-    if (!this.canCheckForUpdates) {
+    if (__LINUX__ || __WIN32__ || !this.canCheckForUpdates) {
       return null
     }
 
@@ -142,7 +142,7 @@ export class About extends React.Component<IAboutProps> {
   }
 
   private renderUpdateDetails() {
-    if (__LINUX__) {
+    if (__LINUX__ || __WIN32__) {
       return null
     }
 
@@ -197,7 +197,7 @@ export class About extends React.Component<IAboutProps> {
   }
 
   private renderUpdateErrors() {
-    if (__LINUX__) {
+    if (__LINUX__ || __WIN32__) {
       return null
     }
 

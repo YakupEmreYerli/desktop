@@ -648,7 +648,10 @@ export class App extends React.Component<IAppProps, IAppState> {
     inBackground: boolean,
     skipGuidCheck: boolean = false
   ) {
-    if (__LINUX__ || __RELEASE_CHANNEL__ === 'development') {
+    // Fork: upstream's updater would replace a Windows install with the
+    // official app, so fork builds don't check for updates on any platform
+    // it ships for.
+    if (__LINUX__ || __WIN32__ || __RELEASE_CHANNEL__ === 'development') {
       return
     }
 
