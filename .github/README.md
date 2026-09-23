@@ -15,6 +15,15 @@ merging upstream changes.
 This is not an official GitHub product. For the official app see
 [desktop.github.com](https://desktop.github.com).
 
+<p align="center">
+  <img src="assets/hero.png" alt="GitHub Desktop fork showing a PDF diff with old and new pages side by side" width="100%">
+</p>
+
+<p align="center">
+  <img src="assets/demo.gif" alt="28-second tour of the fork's features" width="100%"><br>
+  <a href="assets/demo.mp4">28-second tour of the fork's features (MP4)</a>
+</p>
+
 ## Contents
 
 - [What's different](#whats-different)
@@ -37,6 +46,29 @@ This is not an official GitHub product. For the official app see
 | **Repository groups** | Arrange the repository list into your own groups, reorder and collapse them, hide repositories you rarely open, and turn off the Recent group. The same is possible from the command line with `github group`, so an agent can tidy the list for you. |
 | **Repository list from the command line** | `github list`, `github add` and `github remove` show and change the app's repositories without a dialog, so scripts and coding agents can manage them. Removing never touches the folder on disk. |
 | **Linux and Windows packages** | AppImage, deb, rpm and a Windows installer on every release, plus a no-sudo per-user install from source. |
+
+### Screenshots
+
+<img src="assets/01-pdf-diff.png" alt="PDF diff: old and new pages side by side" width="100%">
+<p align="center"><em>PDF diff: old and new pages side by side</em></p>
+
+<img src="assets/02-svg-diff.png" alt="SVG diff with swipe, onion skin and difference modes" width="100%">
+<p align="center"><em>SVG diff with swipe, onion skin and difference modes</em></p>
+
+<img src="assets/03-html-diff.png" alt="HTML diff rendered with its stylesheets and images" width="100%">
+<p align="center"><em>HTML diff rendered with its stylesheets and images</em></p>
+
+<img src="assets/04-translation.png" alt="A README shown in Turkish, changed paragraphs highlighted" width="100%">
+<p align="center"><em>A README shown in Turkish, changed paragraphs highlighted</em></p>
+
+<img src="assets/05-ai-commit-message.png" alt="Commit title and description written by Claude" width="100%">
+<p align="center"><em>Commit title and description written by Claude</em></p>
+
+<img src="assets/06-repository-groups-cli.png" alt="Repository groups, arranged from the github CLI" width="100%">
+<p align="center"><em>Repository groups, arranged from the github CLI</em></p>
+
+<img src="assets/07-changes-filter.png" alt="Changes filter with count badges" width="100%">
+<p align="center"><em>Changes filter with count badges</em></p>
 
 Full list: [CHANGELOG.md](../CHANGELOG.md).
 

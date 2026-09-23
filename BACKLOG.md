@@ -35,3 +35,15 @@ Left:
 - Windows is untested on a real machine. macOS is out: unsigned apps don't
   open there and signing costs money.
 - The fork doesn't update itself; a "new release on GitHub" notice would help.
+
+## 4. Bugs found while capturing the showcase (2026-09-23)
+
+- **HTML diff crashes the app at a 2x scale factor**, every time. Chromium's
+  harmless resize notice arrives as a bare `null` error before the event the
+  guard in `app/src/ui/index.tsx` uses to recognise it, so the fatal error
+  screen shows and the app quits. Never at 1x. Hits anyone on a HiDPI screen.
+- **Türkçe view stays in English in the unified diff view.** Translation
+  finishes and is cached, but the text only shows after switching to Code and
+  back. The e2e test only covers the side-by-side view.
+- **HTML preview draws the old version with the working tree's CSS and
+  images**, so old and new look alike when only the stylesheet changed.

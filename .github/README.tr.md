@@ -13,6 +13,15 @@ ekler ve üst depodaki değişiklikleri almaya devam eder.
 Resmî bir GitHub ürünü değildir. Resmî uygulama için
 [desktop.github.com](https://desktop.github.com).
 
+<p align="center">
+  <img src="assets/hero.png" alt="Eski ve yeni PDF sayfalarını yan yana gösteren GitHub Desktop çatalı" width="100%">
+</p>
+
+<p align="center">
+  <img src="assets/demo.gif" alt="Çatalın özelliklerini gösteren 28 saniyelik tur" width="100%"><br>
+  <a href="assets/demo.mp4">Tanıtım videosu (MP4)</a>
+</p>
+
 ## Neler farklı
 
 | Özellik | Ayrıntı |
@@ -26,6 +35,29 @@ Resmî bir GitHub ürünü değildir. Resmî uygulama için
 | **Depo grupları** | Depo listesini kendi gruplarına ayır, grupları sırala ve katla, az açtığın depoları gizle, "Son kullanılanlar" grubunu kapat. Aynısı `github group` komutuyla da yapılır; bir ajan listeyi senin yerine düzenleyebilir. |
 | **Komut satırından depo listesi** | `github list`, `github add` ve `github remove` uygulamadaki depoları pencere açmadan listeler, ekler ve çıkarır; betikler ve yapay zekâ ajanları da listeyi yönetebilir. Çıkarmak diskteki klasöre dokunmaz. |
 | **Linux ve Windows paketleri** | Her sürümde AppImage, deb, rpm ve Windows kurulumu; ayrıca kaynaktan sudo'suz kullanıcı kurulumu. |
+
+### Ekran görüntüleri
+
+<img src="assets/01-pdf-diff.png" alt="PDF karşılaştırması: eski ve yeni sayfalar yan yana" width="100%">
+<p align="center"><em>PDF karşılaştırması: eski ve yeni sayfalar yan yana</em></p>
+
+<img src="assets/02-svg-diff.png" alt="Kaydırma, üst üste ve fark kipleriyle SVG karşılaştırması" width="100%">
+<p align="center"><em>Kaydırma, üst üste ve fark kipleriyle SVG karşılaştırması</em></p>
+
+<img src="assets/03-html-diff.png" alt="Stil dosyaları ve görselleriyle açılan HTML karşılaştırması" width="100%">
+<p align="center"><em>Stil dosyaları ve görselleriyle açılan HTML karşılaştırması</em></p>
+
+<img src="assets/04-translation.png" alt="Türkçeye çevrilmiş README, değişen paragraflar işaretli" width="100%">
+<p align="center"><em>Türkçeye çevrilmiş README, değişen paragraflar işaretli</em></p>
+
+<img src="assets/05-ai-commit-message.png" alt="Claude'un yazdığı commit başlığı ve açıklaması" width="100%">
+<p align="center"><em>Claude'un yazdığı commit başlığı ve açıklaması</em></p>
+
+<img src="assets/06-repository-groups-cli.png" alt="github komutuyla düzenlenen depo grupları" width="100%">
+<p align="center"><em>github komutuyla düzenlenen depo grupları</em></p>
+
+<img src="assets/07-changes-filter.png" alt="Sayılı değişiklik filtresi" width="100%">
+<p align="center"><em>Sayılı değişiklik filtresi</em></p>
 
 Tam liste (İngilizce): [CHANGELOG.md](../CHANGELOG.md).
 
