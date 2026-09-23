@@ -8,6 +8,9 @@ notes are in `changelog.json` and on
 
 ### Added
 
+- Release packages: AppImage, deb and rpm for Linux, an installer for
+  Windows, built by CI on each version tag, and the AUR package
+  `github-desktop-yakup-bin`.
 - PDF previews in diffs: pages of added and deleted PDFs, old and new side by
   side for modified PDFs, with page navigation. Works in the changes and
   history views; long documents are drawn page by page as you scroll.
@@ -49,6 +52,10 @@ notes are in `changelog.json` and on
 
 ### Fixed
 
+- Signing in through the browser works on Linux: the app ignored the link the
+  browser opened it with, so the sign-in dialog never finished.
+- Windows builds don't offer upstream updates, which would have replaced the
+  fork with the official app.
 - Going full screen no longer shows the "unrecoverable error" dialog. Chromium
   reports a harmless resize notice in a way the app couldn't tell apart from a
   real crash.

@@ -18,19 +18,19 @@ fail when git prints its messages in another language, for example on a
 Turkish system. Forcing `LC_ALL=C` for git in the test environment would fix it; better
 done upstream so the fork doesn't carry the change.
 
-## 3. Linux release artifacts
+## 3. Release packages (Linux + Windows)
 
-Decided 2026-09-23: ship it to other people. Today the only way in is a source
-build with `script/linux-kur.sh`.
+Decided 2026-09-23. Built: `script/fork-builder.yml`, `script/fork-package.sh`,
+`.github/workflows/fork-release.yml` (tag `v<app version>-<n>` → draft release
+with AppImage, deb, rpm, Windows installer, SHA256SUMS) and
+`packaging/aur/PKGBUILD`. AppImage, deb and the AUR package were built and
+checked locally; rpm and Windows only build in CI.
 
-- CI (GitHub Actions) builds AppImage, deb and rpm on a version tag and
-  attaches them to a GitHub release. `shiftkey/desktop` has packaging scripts
-  to borrow.
-- An AUR package (`-bin`, from the release AppImage or deb). Needs an AUR
-  account; Yakup creates it.
-- Own OAuth app instead of upstream's dev app, so the sign-in consent screen
-  names the fork. Client ID and secret go in as `DESKTOP_OAUTH_CLIENT_ID` /
-  `DESKTOP_OAUTH_CLIENT_SECRET` repository secrets, used only by the release
-  job. With a secret the build uses `x-github-desktop-auth`; the installer
-  already registers both schemes.
-- `.github/README.md` install section: download first, source build second.
+Left:
+- Own OAuth app: repository secrets `DESKTOP_OAUTH_CLIENT_ID` /
+  `DESKTOP_OAUTH_CLIENT_SECRET`, set by Yakup.
+- First tag and publishing the draft (outward-facing, confirm first).
+- AUR account and first push of `packaging/aur` (Yakup's account).
+- Windows is untested on a real machine. macOS is out: unsigned apps don't
+  open there and signing costs money.
+- The fork doesn't update itself; a "new release on GitHub" notice would help.

@@ -1,4 +1,4 @@
-# GitHub Desktop for Linux (fork)
+# GitHub Desktop (fork)
 
 **English** · [Türkçe](README.tr.md)
 
@@ -9,7 +9,7 @@
 ![TypeScript](https://img.shields.io/badge/TypeScript-5-3178c6?logo=typescript&logoColor=white)
 
 A fork of [GitHub Desktop](https://github.com/desktop/desktop) for daily use
-on Linux. It adds a few features on top of upstream and keeps
+on Linux and Windows. It adds a few features on top of upstream and keeps
 merging upstream changes.
 
 This is not an official GitHub product. For the official app see
@@ -18,7 +18,7 @@ This is not an official GitHub product. For the official app see
 ## Contents
 
 - [What's different](#whats-different)
-- [Install on Linux](#install-on-linux)
+- [Install](#install)
 - [Development](#development)
 - [Project layout](#project-layout)
 - [Documentation](#documentation)
@@ -36,11 +36,26 @@ This is not an official GitHub product. For the official app see
 | **AI commit messages** | A button next to the commit message writes the title and description from your changes, in the language (Turkish, English or any other) and style (plain, Conventional Commits, Gitmoji, the repository's own, or your rules) you pick. Each AI feature picks its own provider and model in Options → AI (DeepSeek, OpenRouter or your Claude subscription). |
 | **Repository groups** | Arrange the repository list into your own groups, reorder and collapse them, hide repositories you rarely open, and turn off the Recent group. The same is possible from the command line with `github group`, so an agent can tidy the list for you. |
 | **Repository list from the command line** | `github list`, `github add` and `github remove` show and change the app's repositories without a dialog, so scripts and coding agents can manage them. Removing never touches the folder on disk. |
-| **Per-user Linux install** | One script builds and installs the app into your home directory, no sudo, keeping existing GitHub Desktop settings and sign-in. |
+| **Linux and Windows packages** | AppImage, deb, rpm, an AUR package and a Windows installer on every release, plus a no-sudo per-user install from source. |
 
 Full list: [CHANGELOG.md](../CHANGELOG.md).
 
-## Install on Linux
+## Install
+
+Download from the [latest release](https://github.com/YakupEmreYerli/desktop/releases/latest). Builds are x64 and unsigned.
+
+| System | File | How |
+|---|---|---|
+| Windows 10/11 | `GitHubDesktop-…-win-x64.exe` | Run the installer. SmartScreen warns about an unknown publisher: **More info → Run anyway**. |
+| Ubuntu, Debian, Mint | `…-linux-amd64.deb` | `sudo apt install ./GitHubDesktop-…-linux-amd64.deb` |
+| Fedora, openSUSE | `…-linux-x86_64.rpm` | `sudo dnf install ./GitHubDesktop-…-linux-x86_64.rpm` |
+| Arch, CachyOS, Manjaro | AUR `github-desktop-yakup-bin` | `yay -S github-desktop-yakup-bin` |
+| Any Linux | `…-linux-x86_64.AppImage` | `chmod +x` it and run it. |
+
+Settings, repositories and sign-in are shared with the official app. The fork
+doesn't update itself: install a newer release over it.
+
+### From source (Linux)
 
 Requirements: git, [nvm](https://github.com/nvm-sh/nvm) (Node version from
 `.nvmrc`), Yarn 1, and `libsecret` (see
@@ -70,6 +85,7 @@ afterwards.
 | `node script/test.mjs <file>` | A single test file |
 | `yarn build:prod` | Production build into `dist/` |
 | `script/linux-kur.sh [--derleme]` | Build (or reuse `dist/`) and install for this user |
+| `script/fork-package.sh` | Package `dist/` into release files (`dist/packages/`) |
 
 Upstream's contributor guide applies to the base app:
 [.github/CONTRIBUTING.md](CONTRIBUTING.md) and [docs/](../docs).
