@@ -103,6 +103,7 @@ jobs:
             dist/packages/*.deb
             dist/packages/*.rpm
             dist/packages/*.exe
+            !dist/packages/*__uninstaller*
           if-no-files-found: error
 
   release:
