@@ -11,17 +11,19 @@
 # repo (keeps package.json equal to upstream); npx fetches a pinned version.
 set -euo pipefail
 
-kok="$(builtin cd "$(dirname "$0")/.." && pwd)"
+# Relative paths only: on Windows, Git Bash paths like /d/a/… mean nothing to
+# node and electron-builder.
+builtin cd "$(dirname "$0")/.."
 builder="electron-builder@26.15.3"
-electron="$(node -p "require('$kok/package.json').devDependencies.electron")"
+electron="$(node -p "require('./package.json').devDependencies.electron")"
 
 case "$(uname -s)" in
   Linux)
-    dizin="$kok/dist/desktop-linux-x64"
+    dizin="dist/desktop-linux-x64"
     platform=(--linux "${@:-AppImage deb rpm}")
     ;;
   MINGW* | MSYS* | CYGWIN*)
-    dizin="$kok/dist/GitHubDesktop-win32-x64"
+    dizin="dist/GitHubDesktop-win32-x64"
     platform=(--win nsis)
     ;;
   *)
@@ -38,23 +40,23 @@ fi
 # Upstream names the Linux binary `desktop`, which would land in /usr/bin as
 # a meaningless command. Package a hard-linked copy with a clearer name.
 if [[ "$(uname -s)" == Linux ]]; then
-  sahne="$kok/dist/fork-stage"
+  sahne="dist/fork-stage"
   rm -rf "$sahne"
   cp -al "$dizin" "$sahne"
   mv "$sahne/desktop" "$sahne/github-desktop"
   dizin="$sahne"
 fi
 
-rm -rf "$kok/dist/packages"
+rm -rf "dist/packages"
 # shellcheck disable=SC2068
 npx --yes "$builder" \
-  --projectDir "$kok/app" \
-  --config "$kok/script/fork-builder.yml" \
-  --prepackaged "$dizin" \
+  --projectDir "app" \
+  --config "../script/fork-builder.yml" \
+  --prepackaged "../$dizin" \
   --x64 \
   -c.electronVersion="$electron" \
   ${FORK_VERSION:+-c.extraMetadata.version="$FORK_VERSION"} \
   ${platform[@]}
 
-rm -rf "$kok/dist/fork-stage"
-ls -la "$kok/dist/packages"
+rm -rf "dist/fork-stage"
+ls -la "dist/packages"

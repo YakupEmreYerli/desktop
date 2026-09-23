@@ -56,8 +56,8 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # The oldest supported runner keeps the glibc requirement low.
-          - os: ubuntu-22.04
+          # ubuntu-22.04's compiler fails on the printenvz native module.
+          - os: ubuntu-24.04
             name: Linux
           - os: windows-2022
             name: Windows
