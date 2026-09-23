@@ -25,7 +25,7 @@ Resmî bir GitHub ürünü değildir. Resmî uygulama için
 | **Yapay zekâyla commit mesajı** | Commit kutusunun yanındaki düğme değişikliklerinden başlık ve açıklamayı seçtiğin dilde (Türkçe, İngilizce ya da istediğin başka bir dil) ve stilde (sade, Conventional Commits, Gitmoji, deponun kendi stili ya da kendi kuralların) yazar. Her yapay zekâ özelliği Seçenekler → AI'da kendi sağlayıcısını ve modelini seçer (DeepSeek, OpenRouter ya da Claude aboneliğin). |
 | **Depo grupları** | Depo listesini kendi gruplarına ayır, grupları sırala ve katla, az açtığın depoları gizle, "Son kullanılanlar" grubunu kapat. Aynısı `github group` komutuyla da yapılır; bir ajan listeyi senin yerine düzenleyebilir. |
 | **Komut satırından depo listesi** | `github list`, `github add` ve `github remove` uygulamadaki depoları pencere açmadan listeler, ekler ve çıkarır; betikler ve yapay zekâ ajanları da listeyi yönetebilir. Çıkarmak diskteki klasöre dokunmaz. |
-| **Linux ve Windows paketleri** | Her sürümde AppImage, deb, rpm, AUR paketi ve Windows kurulumu; ayrıca kaynaktan sudo'suz kullanıcı kurulumu. |
+| **Linux ve Windows paketleri** | Her sürümde AppImage, deb, rpm ve Windows kurulumu; ayrıca kaynaktan sudo'suz kullanıcı kurulumu. |
 
 Tam liste (İngilizce): [CHANGELOG.md](../CHANGELOG.md).
 
@@ -38,8 +38,7 @@ Tam liste (İngilizce): [CHANGELOG.md](../CHANGELOG.md).
 | Windows 10/11 | `GitHubDesktop-…-win-x64.exe` | Kurulumu çalıştırın. SmartScreen "bilinmeyen yayıncı" der: **Ek bilgi → Yine de çalıştır**. |
 | Ubuntu, Debian, Mint | `…-linux-amd64.deb` | `sudo apt install ./GitHubDesktop-…-linux-amd64.deb` |
 | Fedora, openSUSE | `…-linux-x86_64.rpm` | `sudo dnf install ./GitHubDesktop-…-linux-x86_64.rpm` |
-| Arch, CachyOS, Manjaro | AUR `github-desktop-yakup-bin` | `yay -S github-desktop-yakup-bin` |
-| Her Linux | `…-linux-x86_64.AppImage` | `chmod +x` verip çalıştırın. |
+| Her Linux (Arch dahil) | `…-linux-x86_64.AppImage` | `chmod +x` verip çalıştırın. |
 
 Ayarlar, depolar ve GitHub girişi resmî uygulamayla ortaktır. Çatal kendini
 güncellemez: yeni sürümü üstüne kurun.

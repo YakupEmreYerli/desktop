@@ -30,7 +30,8 @@ Left:
 - Own OAuth app: repository secrets `DESKTOP_OAUTH_CLIENT_ID` /
   `DESKTOP_OAUTH_CLIENT_SECRET`, set by Yakup.
 - First tag and publishing the draft (outward-facing, confirm first).
-- AUR account and first push of `packaging/aur` (Yakup's account).
+- AUR: registration was closed on 2026-09-23 (bot wave). When it reopens,
+  Yakup's account, first push of `packaging/aur`, AUR row back in the READMEs.
 - Windows is untested on a real machine. macOS is out: unsigned apps don't
   open there and signing costs money.
 - The fork doesn't update itself; a "new release on GitHub" notice would help.

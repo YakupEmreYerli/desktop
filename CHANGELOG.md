@@ -9,8 +9,8 @@ notes are in `changelog.json` and on
 ### Added
 
 - Release packages: AppImage, deb and rpm for Linux, an installer for
-  Windows, built by CI on each version tag, and the AUR package
-  `github-desktop-yakup-bin`.
+  Windows, built by CI on each version tag. An AUR recipe is ready in
+  `packaging/aur/` for when AUR registration reopens.
 - PDF previews in diffs: pages of added and deleted PDFs, old and new side by
   side for modified PDFs, with page navigation. Works in the changes and
   history views; long documents are drawn page by page as you scroll.

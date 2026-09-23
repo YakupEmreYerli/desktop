@@ -5,7 +5,7 @@ Rules for every contributor and coding agent working in this repository.
 ## What this is
 
 A fork of [desktop/desktop](https://github.com/desktop/desktop) (GitHub
-Desktop) at `YakupEmreYerli/desktop`, used on Linux. It adds features on top of
+Desktop) at `YakupEmreYerli/desktop`, shipped for Linux and Windows. It adds features on top of
 upstream (PDF and HTML previews in diffs, Turkish translation of documents, a restyled changes filter, a per-user Linux
 installer) and follows upstream closely.
 
