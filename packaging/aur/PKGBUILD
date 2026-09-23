@@ -1,0 +1,30 @@
+# Maintainer: Yakup Emre Yerli <yakupemreyerli0@gmail.com>
+#
+# Source of the AUR package github-desktop-yakup-bin. It repackages the deb
+# from the fork's GitHub release. pkgver is the upstream version plus the fork
+# release number (tag v3.6.6-1 -> 3.6.6.1). After a release, set pkgver, run
+# `updpkgsums` and `makepkg --printsrcinfo > .SRCINFO`, then push to the AUR.
+pkgname=github-desktop-yakup-bin
+pkgver=3.6.6.1
+_tag="v${pkgver%.*}-${pkgver##*.}"
+_deb="GitHubDesktop-${_tag#v}-linux-amd64.deb"
+pkgrel=1
+pkgdesc="GitHub Desktop fork with PDF, SVG and HTML diff previews and AI helpers"
+arch=('x86_64')
+url="https://github.com/YakupEmreYerli/desktop"
+license=('MIT')
+depends=('git' 'libsecret' 'nss' 'gtk3' 'libxss' 'alsa-lib')
+optdepends=('claude-code: commit messages and translation with Claude')
+provides=('github-desktop')
+conflicts=('github-desktop' 'github-desktop-bin' 'github-desktop-git')
+options=('!strip' '!debug')
+source=("${_deb}::${url}/releases/download/${_tag}/${_deb}")
+sha256sums=('SKIP')
+
+package() {
+  bsdtar -xf data.tar.xz -C "$pkgdir"
+  install -d "$pkgdir/usr/bin"
+  ln -sf "/opt/GitHub Desktop/github-desktop" "$pkgdir/usr/bin/github-desktop"
+  install -Dm644 "$pkgdir/opt/GitHub Desktop/LICENSE" \
+    "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+}

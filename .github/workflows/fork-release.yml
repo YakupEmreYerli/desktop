@@ -1,0 +1,132 @@
+# Release packages for the YakupEmreYerli/desktop fork: AppImage, deb and rpm
+# for Linux, an NSIS installer for Windows. Pushing a tag like `v3.6.6-1`
+# (upstream version, dash, fork release number) builds everything and opens a
+# draft GitHub release with the files; publishing the draft is a manual step.
+#
+# Builds are unsigned. OAuth credentials come from the repository secrets
+# DESKTOP_OAUTH_CLIENT_ID / DESKTOP_OAUTH_CLIENT_SECRET; without them the app
+# falls back to upstream's development OAuth app.
+name: Fork release
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Package version, e.g. 3.6.6-1 (no release is created)
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  version:
+    name: Version
+    if: github.repository == 'YakupEmreYerli/desktop'
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.v.outputs.version }}
+      node: ${{ steps.v.outputs.node }}
+    steps:
+      - uses: actions/checkout@v7
+      - id: v
+        env:
+          INPUT_VERSION: ${{ inputs.version }}
+        run: |
+          if [[ "$GITHUB_REF_TYPE" == tag ]]; then
+            version="${GITHUB_REF_NAME#v}"
+          else
+            version="$INPUT_VERSION"
+          fi
+          app="$(node -p "require('./app/package.json').version")"
+          if [[ "$version" != "$app"-* ]]; then
+            echo "Version $version must be the app version ($app) plus -N" >&2
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "node=$(cat .nvmrc)" >> "$GITHUB_OUTPUT"
+
+  package:
+    name: Package (${{ matrix.name }})
+    needs: version
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # The oldest supported runner keeps the glibc requirement low.
+          - os: ubuntu-22.04
+            name: Linux
+          - os: windows-2022
+            name: Windows
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          submodules: recursive
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+      - uses: actions/setup-node@v6
+        with:
+          node-version: ${{ needs.version.outputs.node }}
+          cache: yarn
+      - name: Install system libraries
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libsecret-1-dev rpm
+      - name: Install dependencies
+        run: yarn
+        env:
+          npm_config_arch: x64
+          TARGET_ARCH: x64
+      - name: Build production app
+        run: yarn build:prod
+        env:
+          DESKTOP_OAUTH_CLIENT_ID: ${{ secrets.DESKTOP_OAUTH_CLIENT_ID }}
+          DESKTOP_OAUTH_CLIENT_SECRET:
+            ${{ secrets.DESKTOP_OAUTH_CLIENT_SECRET }}
+          npm_config_arch: x64
+          TARGET_ARCH: x64
+      - name: Package
+        run: script/fork-package.sh
+        env:
+          FORK_VERSION: ${{ needs.version.outputs.version }}
+      - uses: actions/upload-artifact@v7
+        with:
+          name: packages-${{ matrix.name }}
+          path: |
+            dist/packages/*.AppImage
+            dist/packages/*.deb
+            dist/packages/*.rpm
+            dist/packages/*.exe
+          if-no-files-found: error
+
+  release:
+    name: Draft release
+    needs: [version, package]
+    if: github.ref_type == 'tag'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v7
+        with:
+          pattern: packages-*
+          merge-multiple: true
+          path: packages
+      - name: Checksums
+        run: cd packages && sha256sum * > SHA256SUMS.txt
+      - name: Create draft release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          gh release create "$TAG" packages/* \
+            --repo "$GITHUB_REPOSITORY" \
+            --draft \
+            --title "GitHub Desktop (fork) $TAG" \
+            --generate-notes

@@ -1,0 +1,70 @@
+# electron-builder config for the fork's release packages.
+#
+# It wraps the app `yarn build:prod` already put in dist/ (--prepackaged), so
+# the upstream build and packaging scripts stay untouched. Run from the repo
+# root, see script/fork-package.sh.
+appId: io.github.yakupemreyerli.desktop
+productName: GitHub Desktop
+copyright: Copyright © GitHub, Inc. and contributors
+artifactName: GitHubDesktop-${version}-${os}-${arch}.${ext}
+
+# Package metadata only; the packaged app itself is unchanged.
+extraMetadata:
+  name: github-desktop-yakup
+  homepage: https://github.com/YakupEmreYerli/desktop
+
+directories:
+  buildResources: static
+  output: ../dist/packages
+
+publish: null
+
+linux:
+  executableName: github-desktop
+  icon: linux/icon-logo.png
+  category: Development
+  synopsis: GitHub Desktop with document previews and AI helpers
+  description: >-
+    A fork of GitHub Desktop for Linux and Windows: PDF, SVG and HTML previews
+    in diffs, document translation and commit messages from Claude.
+  maintainer: Yakup Emre Yerli <yakupemreyerli0@gmail.com>
+  vendor: Yakup Emre Yerli
+  mimeTypes:
+    - x-scheme-handler/x-github-client
+    - x-scheme-handler/x-github-desktop-auth
+    - x-scheme-handler/x-github-desktop-dev-auth
+  desktop:
+    entry:
+      StartupWMClass: GitHub Desktop
+  target:
+    - AppImage
+    - deb
+    - rpm
+
+deb:
+  depends:
+    - libsecret-1-0
+    - libnss3
+    - libgtk-3-0
+    - libxss1
+    - libasound2 | libasound2t64
+    - git
+
+rpm:
+  depends:
+    - libsecret
+    - nss
+    - gtk3
+    - git
+
+win:
+  executableName: GitHubDesktop
+  icon: logos/prod/icon-logo.ico
+  target: nsis
+
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  shortcutName: GitHub Desktop
+  uninstallDisplayName: GitHub Desktop (fork)
