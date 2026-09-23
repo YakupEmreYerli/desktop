@@ -26,6 +26,7 @@ conflicts.
 | `app/src/lib/cli-action.ts` | `add-repository` and `remove-repository` action kinds |
 | `app/src/cli/main.ts` | `list`, `add`, `remove` subcommands; `run` starts the app on Linux |
 | `app/src/main-process/main.ts` | `--cli-add` / `--cli-remove` sent as CLI actions without focusing the window |
+| `app/src/main-process/main.ts` | Linux: app url in argv (OAuth callback, `x-github-client`) goes to `handleAppURL` |
 | `app/src/ui/dispatcher/dispatcher.ts` | `dispatchCLIAction` hands add/remove to `dispatchRepositoryListAction` |
 | `app/src/ui/index.tsx` | `syncRepositoryListFile(appStore)` |
 | `app/src/ui/cli-action/test-cli-action-dialog.tsx` | tab kinds narrowed to open/clone |

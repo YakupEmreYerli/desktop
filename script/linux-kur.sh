@@ -101,12 +101,15 @@ Type=Application
 Icon=$simge
 StartupWMClass=GitHub Desktop
 Categories=Development;RevisionControl;
-MimeType=x-scheme-handler/x-github-client;x-scheme-handler/x-github-desktop-auth;
+MimeType=x-scheme-handler/x-github-client;x-scheme-handler/x-github-desktop-auth;x-scheme-handler/x-github-desktop-dev-auth;
 EOF
 
 update-desktop-database "$(dirname "$masaustu")" 2>/dev/null || true
 xdg-mime default github-desktop.desktop x-scheme-handler/x-github-client 2>/dev/null
 xdg-mime default github-desktop.desktop x-scheme-handler/x-github-desktop-auth 2>/dev/null
+# Derlemede OAuth sırrı yoksa uygulama geliştirici girişini kullanır, dönüş
+# bu adrese gelir.
+xdg-mime default github-desktop.desktop x-scheme-handler/x-github-desktop-dev-auth 2>/dev/null
 
 surum="$(python3 -c "import json;print(json.load(open('$hedef/resources/app/package.json'))['version'])")"
 echo "Kuruldu: GitHub Desktop $surum ($(git -C "$kok" rev-parse --short HEAD)) → $hedef"

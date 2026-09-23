@@ -289,6 +289,18 @@ async function handleCommandLineArguments(argv: string[]) {
     return
   }
 
+  // On Linux the desktop entry launches `desktop <url>` with no switch, and
+  // upstream only handles app urls on Windows and macOS, so the OAuth
+  // callback from the browser was silently dropped.
+  if (__LINUX__) {
+    const prefixes = Array.from(possibleProtocols, p => `${p}://`)
+    const url = argv.find(arg => prefixes.some(p => arg.startsWith(p)))
+    if (url) {
+      handleAppURL(url)
+      return
+    }
+  }
+
   if (typeof args['cli-add'] === 'string') {
     sendCLIAction({ kind: 'add-repository', path: args['cli-add'] })
   } else if (typeof args['cli-remove'] === 'string') {
