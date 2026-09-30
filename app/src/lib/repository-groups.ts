@@ -223,6 +223,37 @@ export function setShowRecent(
   return { ...layout, showRecent }
 }
 
+/**
+ * Drops every path that isn't one of `known`, the repositories the app lists:
+ * one removed from the app would otherwise stay in its group in the file for
+ * good. Returns the layout and the dropped paths.
+ */
+export function pruneRepositories(
+  layout: IRepositoryGroupsLayout,
+  known: ReadonlyArray<string>
+): { layout: IRepositoryGroupsLayout; pruned: ReadonlyArray<string> } {
+  const isKnown = (path: string) =>
+    known.some(k => isSameRepositoryPath(k, path))
+  const pruned = [
+    ...layout.groups.flatMap(g => g.repositories),
+    ...layout.hidden,
+  ].filter(p => !isKnown(p))
+  if (pruned.length === 0) {
+    return { layout, pruned }
+  }
+  return {
+    layout: {
+      ...layout,
+      hidden: layout.hidden.filter(isKnown),
+      groups: layout.groups.map(g => ({
+        ...g,
+        repositories: g.repositories.filter(isKnown),
+      })),
+    },
+    pruned,
+  }
+}
+
 const isStringArray = (x: unknown): x is ReadonlyArray<string> =>
   Array.isArray(x) && x.every(s => typeof s === 'string')
 

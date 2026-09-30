@@ -52,6 +52,10 @@ notes are in `changelog.json` and on
 
 ### Fixed
 
+- A repository removed from the app no longer lingers in its group: every
+  time the repository list changes (and at startup), the groups file forgets
+  paths the app doesn't list, so `github group list` stops showing them as
+  missing.
 - Signing in through the browser works on Linux: the app ignored the link the
   browser opened it with, so the sign-in dialog never finished.
 - Windows builds don't offer upstream updates, which would have replaced the

@@ -12,6 +12,7 @@ import {
   isHidden,
   moveGroup,
   parseRepositoryGroups,
+  pruneRepositories,
   renameGroup,
   serializeRepositoryGroups,
   setCollapsed,
@@ -42,6 +43,22 @@ describe('repository groups', () => {
 
     layout = assignRepository(layout, '/src/a', null)
     assert.equal(findGroupOf(layout, '/src/a'), undefined)
+  })
+
+  it('prunes repositories the app no longer lists, and only those', () => {
+    let layout = assignRepository(empty, '/src/a', 'Clients')
+    layout = assignRepository(layout, '/src/gone', 'Clients')
+    layout = setHidden(layout, '/src/old', true)
+
+    const result = pruneRepositories(layout, ['/src/a/'])
+    assert.deepStrictEqual(result.pruned, ['/src/gone', '/src/old'])
+    assert.deepStrictEqual(result.layout.groups[0].repositories, ['/src/a'])
+    assert.deepStrictEqual(result.layout.hidden, [])
+    assert.equal(result.layout.groups[0].name, 'Clients')
+
+    const again = pruneRepositories(result.layout, ['/src/a'])
+    assert.deepStrictEqual(again.pruned, [])
+    assert.strictEqual(again.layout, result.layout)
   })
 
   it('hiding takes a repository out of its group', () => {

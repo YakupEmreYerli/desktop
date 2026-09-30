@@ -6,6 +6,7 @@ import type { CLIAction } from '../../lib/cli-action'
 import type { Repository } from '../../models/repository'
 import type { CloningRepository } from '../../models/cloning-repository'
 import { getPath } from '../main-process-proxy'
+import { repositoryGroupsStore } from './repository-groups-store'
 import { matchExistingRepository } from '../../lib/repository-matching'
 import {
   RepositoryListFileName,
@@ -15,7 +16,8 @@ import {
 /**
  * Keeps `repositories.json` in the user data directory in step with the
  * repository list, for `github list` and for `github add/remove` to see their
- * result.
+ * result. Each time, repositories that left the list are also taken out of
+ * `repository-groups.json`, however they were removed.
  */
 export function syncRepositoryListFile(appStore: AppStore) {
   let written: string | null = null
@@ -34,6 +36,9 @@ export function syncRepositoryListFile(appStore: AppStore) {
       return
     }
     written = contents
+    repositoryGroupsStore
+      .forgetMissing(state.repositories.map(r => r.path))
+      .catch(e => log.error('Could not prune the repository groups', e))
     writing = writing
       .then(() => writeListFile(contents))
       .catch(e => {

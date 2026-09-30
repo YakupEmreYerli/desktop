@@ -7,6 +7,7 @@ import {
   IRepositoryGroupsLayout,
   RepositoryGroupsFileName,
   parseRepositoryGroups,
+  pruneRepositories,
   serializeRepositoryGroups,
 } from '../../lib/repository-groups'
 
@@ -21,7 +22,7 @@ class RepositoryGroupsStore {
   private layout = DefaultRepositoryGroupsLayout
   private contents: string | null = null
   private readonly listeners = new Set<Listener>()
-  private started = false
+  private started: Promise<void> | null = null
   private reloadTimer: number | null = null
   private writing = Promise.resolve()
 
@@ -62,11 +63,26 @@ class RepositoryGroupsStore {
     return Path.join(await getPath('userData'), RepositoryGroupsFileName)
   }
 
-  private async start() {
-    if (this.started) {
-      return
+  /**
+   * Forgets repositories that are no longer in the app, given every path it
+   * lists. The file is read first, so a store nobody has subscribed to yet
+   * doesn't overwrite it with the default layout.
+   */
+  public async forgetMissing(known: ReadonlyArray<string>) {
+    await this.start()
+    const { layout, pruned } = pruneRepositories(this.layout, known)
+    if (pruned.length > 0) {
+      log.info(`Forgetting repositories no longer in the app: ${pruned}`)
+      this.update(() => layout)
     }
-    this.started = true
+  }
+
+  private start() {
+    this.started ??= this.load()
+    return this.started
+  }
+
+  private async load() {
     await this.reload()
     try {
       const path = await this.getFilePath()

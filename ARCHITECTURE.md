@@ -357,7 +357,11 @@ agents may edit the file by hand.
 
 **In the app.** `ui/lib/repository-groups-store.ts` reads the file, watches
 its directory (the file is replaced by rename) and reloads on change; UI
-changes are written back the same way. `arrangeRepositories`
+changes are written back the same way. Whenever `ui/lib/repository-list-sync.ts`
+writes `repositories.json` (startup and every list change, never an empty
+list before the database has loaded), it calls `forgetMissing` with the
+listed paths, so a removed repository leaves its group however it was
+removed. `arrangeRepositories`
 (`ui/repositories-list/arrange-repositories.ts`) runs upstream's
 `groupRepositories` and rearranges the result: Recent (without hidden
 repositories, left out when turned off), the user's groups, owner groups with
