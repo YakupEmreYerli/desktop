@@ -80,6 +80,11 @@ notes are in `changelog.json` and on
 
 ### Changed
 
+- The Windows installer is a step-by-step setup wizard: welcome, licence,
+  install for just you or everyone, choose the folder, and start the app on
+  the last page. It follows Windows' language (Turkish or English) and adds
+  desktop and Start menu shortcuts. CI installs it and starts the app on
+  every push, so a broken installer is caught before a release.
 - The app draws its own menu bar on Linux instead of leaving it to Electron,
   and in a KDE Plasma session it takes the colour and font of the window's
   titlebar and follows the colour scheme when it changes, so the app's first

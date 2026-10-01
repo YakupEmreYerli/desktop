@@ -104,7 +104,7 @@ Builds are 64-bit (x64).
 
 | System | File | How |
 |---|---|---|
-| **Windows 10/11** | `GitHubDesktop-…-win-x64.exe` | Run it. Windows warns about an unknown publisher because the build isn't signed: **More info → Run anyway**. |
+| **Windows 10/11** | `GitHubDesktop-…-win-x64.exe` | Run it and follow the setup wizard: install for just you or everyone, pick a folder, start the app at the end. Windows warns about an unknown publisher because the build isn't signed: **More info → Run anyway**. |
 | **Ubuntu, Debian, Mint** | `…-linux-amd64.deb` | `sudo apt install ./GitHubDesktop-…-linux-amd64.deb` |
 | **Fedora, openSUSE** | `…-linux-x86_64.rpm` | `sudo dnf install ./GitHubDesktop-…-linux-x86_64.rpm` |
 | **Any Linux, Arch too** | `…-linux-x86_64.AppImage` | `chmod +x` the file and run it. |

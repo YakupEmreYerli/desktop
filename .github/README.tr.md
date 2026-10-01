@@ -103,7 +103,7 @@ indirin. Dosyalar 64 bittir (x64).
 
 | Sistem | Dosya | Nasıl |
 |---|---|---|
-| **Windows 10/11** | `GitHubDesktop-…-win-x64.exe` | Çalıştırın. Dosya imzasız olduğu için Windows "bilinmeyen yayıncı" uyarısı verir: **Ek bilgi → Yine de çalıştır**. |
+| **Windows 10/11** | `GitHubDesktop-…-win-x64.exe` | Çalıştırın ve kurulum sihirbazını izleyin: yalnız sizin için ya da herkes için kurun, klasör seçin, sonunda uygulamayı başlatın. Dosya imzasız olduğu için Windows "bilinmeyen yayıncı" uyarısı verir: **Ek bilgi → Yine de çalıştır**. |
 | **Ubuntu, Debian, Mint** | `…-linux-amd64.deb` | `sudo apt install ./GitHubDesktop-…-linux-amd64.deb` |
 | **Fedora, openSUSE** | `…-linux-x86_64.rpm` | `sudo dnf install ./GitHubDesktop-…-linux-x86_64.rpm` |
 | **Her Linux, Arch dahil** | `…-linux-x86_64.AppImage` | Dosyaya `chmod +x` verip çalıştırın. |

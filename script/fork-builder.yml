@@ -63,8 +63,16 @@ win:
   target: nsis
 
 nsis:
+  # Classic wizard: welcome, licence, only me / everyone, folder, install,
+  # finish with "Run GitHub Desktop". In Turkish or English, following Windows.
   oneClick: false
-  perMachine: false
   allowToChangeInstallationDirectory: true
+  license: ../LICENSE
+  include: ../script/fork-installer.nsh
+  installerLanguages: [en_US, tr_TR]
+  multiLanguageInstaller: true
+  runAfterFinish: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
   shortcutName: GitHub Desktop
   uninstallDisplayName: GitHub Desktop (fork)

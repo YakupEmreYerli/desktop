@@ -42,3 +42,64 @@ jobs:
           yarn test:unit
       - name: Build
         run: yarn build:prod
+
+  windows:
+    # Builds the same setup wizard users download, installs it (silently, the
+    # wizard's own /S mode), starts the installed app and checks it is still
+    # running after 30 seconds.
+    name: Install and launch (Windows)
+    if: github.repository == 'YakupEmreYerli/desktop'
+    runs-on: windows-2022
+    timeout-minutes: 60
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          submodules: recursive
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: .nvmrc
+          cache: yarn
+      - name: Install dependencies
+        run: yarn
+        env:
+          npm_config_arch: x64
+          TARGET_ARCH: x64
+      - name: Build
+        run: yarn build:prod
+        env:
+          npm_config_arch: x64
+          TARGET_ARCH: x64
+      - name: Package installer
+        run: script/fork-package.sh
+      - name: Install, launch and uninstall
+        shell: pwsh
+        run: |
+          $installer = Get-ChildItem dist/packages/*.exe |
+            Where-Object { $_.Name -notlike '*uninstaller*' } |
+            Select-Object -First 1
+          if (-not $installer) { throw 'No installer in dist/packages' }
+          Write-Host "Installing $($installer.Name)"
+          $dir = 'C:\fork-smoke'
+          $setup = Start-Process -FilePath $installer.FullName `
+            -ArgumentList '/S', '/currentuser', "/D=$dir" -Wait -PassThru
+          if ($setup.ExitCode -ne 0) { throw "Installer exited with $($setup.ExitCode)" }
+          $exe = Join-Path $dir 'GitHubDesktop.exe'
+          if (-not (Test-Path $exe)) { throw "Not installed: $exe" }
+
+          $app = Start-Process -FilePath $exe -PassThru
+          Start-Sleep -Seconds 30
+          if ($app.HasExited) { throw "App exited after start with code $($app.ExitCode)" }
+          $app.Refresh()
+          Write-Host "Running after 30 s, window: '$($app.MainWindowTitle)'"
+          Get-Process GitHubDesktop -ErrorAction SilentlyContinue | Stop-Process -Force
+
+          $uninstaller = Get-ChildItem $dir -Filter 'Uninstall*.exe' | Select-Object -First 1
+          if ($uninstaller) {
+            Start-Process -FilePath $uninstaller.FullName -ArgumentList '/S' -Wait
+          }
