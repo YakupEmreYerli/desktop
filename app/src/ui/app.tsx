@@ -174,7 +174,8 @@ import { generateRepositoryListContextMenu } from './repositories-list/repositor
 import * as ipcRenderer from '../lib/ipc-renderer'
 import { DiscardChangesRetryDialog } from './discard-changes/discard-changes-retry-dialog'
 import { PullRequestReview } from './notifications/pull-request-review'
-import { getRepositoryType } from '../lib/git'
+import { getRepositoryType, getRemotes } from '../lib/git'
+import { getRemoteWebUrl } from '../lib/remote-web-url'
 import { SSHUserPassword } from './ssh/ssh-user-password'
 import { showContextualMenu } from '../lib/menu-item'
 import { UnreachableCommitsDialog } from './history/unreachable-commits-dialog'
@@ -3393,6 +3394,20 @@ export class App extends React.Component<IAppProps, IAppState> {
     }
 
     const url = getGitHubHtmlUrl(repository)
+
+    if (url) {
+      this.props.dispatcher.openInBrowser(url)
+      return
+    }
+
+    this.viewRemoteInBrowser(repository)
+  }
+
+  /** Opens the web page of a non-GitHub remote, preferring `origin`. */
+  private viewRemoteInBrowser = async (repository: Repository) => {
+    const remotes = await getRemotes(repository)
+    const remote = remotes.find(r => r.name === 'origin') ?? remotes.at(0)
+    const url = remote ? getRemoteWebUrl(remote.url) : null
 
     if (url) {
       this.props.dispatcher.openInBrowser(url)

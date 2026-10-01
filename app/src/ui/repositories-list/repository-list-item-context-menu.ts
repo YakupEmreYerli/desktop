@@ -51,9 +51,10 @@ export const generateRepositoryListContextMenu = (
     },
     { type: 'separator' },
     {
-      label: 'View on GitHub',
+      // Non-GitHub remotes (Forgejo, Gitea, GitLab…) open the origin's web page.
+      label: github || missing ? 'View on GitHub' : 'View in browser',
       action: () => config.onViewOnGitHub(repository),
-      enabled: github,
+      enabled: github || (repository instanceof Repository && !missing),
     },
     {
       label: openInShell,
