@@ -84,7 +84,9 @@ düzenleyebilir.
 </table>
 
 Ayrıca: değişiklik filtresinde sayılar var ve birkaç filtre seçerken açık
-kalıyor. Tam liste (İngilizce): [CHANGELOG.md](../CHANGELOG.md).
+kalıyor. Kendi sunucunuzdaki depolarda (Forgejo, Gitea, GitLab) push, şifre
+sormadan git ayarınızdaki şifre yardımcılarını kullanıyor; depo menüsü de
+deponun sayfasını tarayıcıda açıyor. Tam liste (İngilizce): [CHANGELOG.md](../CHANGELOG.md).
 
 <details>
 <summary><b>28 saniyelik turu izleyin</b></summary>

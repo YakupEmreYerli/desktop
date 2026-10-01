@@ -50,6 +50,14 @@ notes are in `changelog.json` and on
   Linux, keeping existing GitHub Desktop settings and sign-in.
 - Linux CI for the fork (lint, unit tests, production build).
 
+- Self-hosted Git servers (Forgejo, Gitea, GitLab and others): pushing and
+  fetching use the credential helpers from your own git config (pass,
+  libsecret, a password manager CLI or a script) before Desktop asks for a
+  password, so a remote that works in the terminal works in the app too.
+- View in browser for repositories outside GitHub: the repository list's
+  right-click menu opens the remote's web page (origin first) instead of a
+  greyed-out View on GitHub.
+
 ### Fixed
 
 - A repository removed from the app no longer lingers in its group: every

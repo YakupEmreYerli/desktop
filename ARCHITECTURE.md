@@ -19,6 +19,9 @@ conflicts.
 | `app/src/ui/preferences/preferences.tsx` | AI tab: tab label, `getTabId` case, renders `AIPreferences` |
 | `app/src/ui/index.tsx` | `registerAISettingsOpener(dispatcher)` |
 | `app/webpack.common.ts` | `PdfjsRuntimePlugin` in the renderer config |
+| `app/src/lib/trampoline/trampoline-credential-helper.ts` | `getGenericCredential` asks `fillCredentialFromGitConfig` (`lib/git/configured-credential-helper.ts`) after Desktop's own stored accounts and before prompting |
+| `app/src/ui/app.tsx` | `viewOnGitHub` falls back to `getRemoteWebPage` (`lib/view-remote-in-browser.ts`) for non-GitHub repositories |
+| `app/src/ui/repositories-list/repository-list-item-context-menu.ts` | "View in browser" label, enabled for any present repository |
 | `app/styles/_ui.scss` | imports `ui/pdf-diff`, `ui/html-diff`, `ui/view-switch`, `ui/translation-diff`, `ui/ai-preferences`, `ui/repository-groups` |
 | `app/styles/ui/_changes.scss` | imports `changes/filter-popover` |
 | `app/src/ui/changes/changes-list-filter-options.tsx` | options rendered through `renderOption`, popover stays open on toggle |

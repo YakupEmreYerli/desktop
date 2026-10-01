@@ -85,7 +85,9 @@ tidy the list too.
 </table>
 
 Also: the changes filter has count badges and stays open while you pick
-several filters. Full list in [CHANGELOG.md](../CHANGELOG.md).
+several filters. On self-hosted servers (Forgejo, Gitea, GitLab) pushing uses
+the credential helpers from your git config instead of asking for a password,
+and the repository menu opens the remote in your browser. Full list in [CHANGELOG.md](../CHANGELOG.md).
 
 <details>
 <summary><b>Watch the 28-second tour</b></summary>

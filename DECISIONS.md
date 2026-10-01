@@ -3,6 +3,24 @@
 Why the fork is built the way it is. Newest first. How things work today is in
 `ARCHITECTURE.md`.
 
+## 2026-10-01: Your own credential helpers for self-hosted servers
+
+Desktop clears every configured credential helper and puts its own in place,
+so a Forgejo or Gitea remote whose password comes from pass, libsecret or a
+script works in the terminal but asks for a password in the app. The fork
+keeps Desktop's helper and adds one step for hosts that aren't GitHub: after
+Desktop's own stored accounts and before the prompt, it runs
+`git credential fill` with the user's configuration. It never prompts
+(terminal prompts and askpass are off), so a missing helper falls through to
+the usual dialog. GitHub hosts are untouched; their tokens stay in Desktop.
+
+## 2026-10-01: View in browser for remotes outside GitHub
+
+Forgejo, Gitea, GitLab and Bitbucket all serve a repository at
+`https://<host>/<owner>/<name>`, so the remote URL is enough to open it: no
+API, no per-host code. The repository menu item stays where View on GitHub
+was, renamed for these repositories, and uses origin first.
+
 ## 2026-09-19: A provider and model per AI feature
 
 Translation wants a strong model for long text; commit messages are short
