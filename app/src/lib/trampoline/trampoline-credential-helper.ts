@@ -4,11 +4,11 @@ import { forceUnwrap } from '../fatal-error'
 import {
   approveCredential,
   fillCredential,
-  fillCredentialFromGitConfig,
   formatCredential,
   parseCredential,
   rejectCredential,
 } from '../git/credential'
+import { fillCredentialFromGitConfig } from '../git/configured-credential-helper'
 import {
   getCredentialUrl,
   getIsBackgroundTaskEnvironment,
