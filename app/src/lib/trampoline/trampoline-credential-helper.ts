@@ -4,6 +4,7 @@ import { forceUnwrap } from '../fatal-error'
 import {
   approveCredential,
   fillCredential,
+  fillCredentialFromGitConfig,
   formatCredential,
   parseCredential,
   rejectCredential,
@@ -71,6 +72,15 @@ async function getGenericCredential(cred: Credential, token: string) {
   if (account) {
     info(`found generic credential for ${endpoint}`)
     return credWithAccount(cred, account)
+  }
+
+  const configured = await fillCredentialFromGitConfig(
+    cred,
+    getTrampolineEnvironmentPath(token)
+  )
+  if (configured) {
+    info(`found credential for ${endpoint} in a configured git helper`)
+    return configured
   }
 
   if (getIsBackgroundTaskEnvironment(token)) {
