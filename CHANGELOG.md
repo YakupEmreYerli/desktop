@@ -8,6 +8,8 @@ notes are in `changelog.json` and on
 
 ### Added
 
+- Options → AI can hide GitHub Copilot's button in the commit box, for when
+  the fork's own commit message button is the one in use.
 - Release packages: AppImage, deb and rpm for Linux, an installer for
   Windows, built by CI on each version tag. An AUR recipe is ready in
   `packaging/aur/` for when AUR registration reopens.

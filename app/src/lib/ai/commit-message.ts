@@ -113,6 +113,17 @@ export function setCommitMessageSettings(
   }
 }
 
+const ShowCopilotButtonKey = 'ai-show-copilot-button'
+
+/** Whether the commit box keeps GitHub Copilot's button next to this fork's own */
+export function getShowCopilotButton() {
+  return localStorage.getItem(ShowCopilotButtonKey) !== '0'
+}
+
+export function setShowCopilotButton(show: boolean) {
+  localStorage.setItem(ShowCopilotButtonKey, show ? '1' : '0')
+}
+
 /**
  * Longest diff sent to the model. A commit is described by what it changes,
  * not by every line of a large generated file, so the rest is cut.

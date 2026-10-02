@@ -7,6 +7,7 @@ import {
   CoAuthorAutocompletionProvider,
 } from '../autocompletion'
 import { CommitIdentity } from '../../models/commit-identity'
+import { getShowCopilotButton } from '../../lib/ai/commit-message'
 import {
   DefaultCommitMessage,
   ICommitMessage,
@@ -1212,6 +1213,7 @@ export class CommitMessage extends React.Component<
   private get isCopilotButtonEnabled() {
     const { accounts, onGenerateCommitMessage } = this.props
     return (
+      getShowCopilotButton() &&
       accounts.some(enableCommitMessageGeneration) &&
       onGenerateCommitMessage !== undefined
     )

@@ -6,6 +6,7 @@ import { DialogContent } from '../dialog'
 import { TextBox } from '../lib/text-box'
 import { PasswordTextBox } from '../lib/password-text-box'
 import { Select } from '../lib/select'
+import { Checkbox, CheckboxValue } from '../lib/checkbox'
 import { Button } from '../lib/button'
 import { LinkButton } from '../lib/link-button'
 import { Loading } from '../lib/loading'
@@ -40,6 +41,8 @@ import {
   ICommitMessageSettings,
   getCommitMessageSettings,
   setCommitMessageSettings,
+  getShowCopilotButton,
+  setShowCopilotButton,
 } from '../../lib/ai/commit-message'
 
 /** One line under each provider's name */
@@ -127,6 +130,7 @@ interface ITaskSettingsState {
   readonly provider: AIProviderKind | null
   readonly model: string
   readonly commitMessage: ICommitMessageSettings
+  readonly showCopilotButton: boolean
   readonly test: TestResult
 }
 
@@ -143,6 +147,7 @@ class TaskSettings extends React.Component<
       provider: getTaskProvider(props.task),
       model: getTaskModel(props.task),
       commitMessage: getCommitMessageSettings(),
+      showCopilotButton: getShowCopilotButton(),
       test: { kind: 'idle' },
     }
   }
@@ -345,8 +350,23 @@ class TaskSettings extends React.Component<
           style={style}
           description={description}
         />
+        <Checkbox
+          label="Show GitHub Copilot's button in the commit box"
+          value={
+            this.state.showCopilotButton ? CheckboxValue.On : CheckboxValue.Off
+          }
+          onChange={this.onShowCopilotButtonChanged}
+        />
       </>
     )
+  }
+
+  private onShowCopilotButtonChanged = (
+    event: React.FormEvent<HTMLInputElement>
+  ) => {
+    const show = event.currentTarget.checked
+    setShowCopilotButton(show)
+    this.setState({ showCopilotButton: show })
   }
 
   private renderModel(provider: AIProviderKind) {
