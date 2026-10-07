@@ -1,0 +1,161 @@
+# Weekly merge of desktop/desktop's development branch into the fork.
+#
+# Merges upstream into the `upstream-sync` branch and opens (or updates) a
+# pull request into `development`. Nothing is merged into `development`
+# automatically: the maintainer reviews the pull request, checks Fork CI and
+# merges it with a merge commit. When the merge conflicts, the job opens (or
+# updates) an issue listing the conflicting files and fails; the merge is
+# then done by hand, see "Syncing with upstream" in AGENTS.md.
+#
+# Pushing a branch whose new commits touch .github/workflows needs a token
+# with the `workflow` scope, which the default GITHUB_TOKEN never has. Set the
+# repository secret UPSTREAM_SYNC_TOKEN (a fine-grained token with contents,
+# pull requests, issues, actions and workflows write access on this repository)
+# for those weeks; without it the job reports the rejected push in the issue.
+name: Upstream sync
+
+on:
+  schedule:
+    - cron: '17 5 * * 1' # Mondays, 05:17 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+  actions: write
+
+concurrency:
+  group: upstream-sync
+  cancel-in-progress: false
+
+env:
+  UPSTREAM_URL: https://github.com/desktop/desktop.git
+  UPSTREAM_BRANCH: development
+  BASE_BRANCH: development
+  SYNC_BRANCH: upstream-sync
+  ISSUE_TITLE: 'Upstream sync needs a manual merge'
+
+jobs:
+  sync:
+    name: Merge upstream development
+    if: github.repository == 'YakupEmreYerli/desktop'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      GH_TOKEN: ${{ secrets.UPSTREAM_SYNC_TOKEN || github.token }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ env.BASE_BRANCH }}
+          fetch-depth: 0
+          token: ${{ secrets.UPSTREAM_SYNC_TOKEN || github.token }}
+
+      - name: Fetch upstream
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git remote add upstream "$UPSTREAM_URL"
+          git fetch --no-tags upstream "$UPSTREAM_BRANCH"
+
+      - name: Check for new upstream commits
+        id: check
+        run: |
+          behind=$(git rev-list --count "HEAD..upstream/$UPSTREAM_BRANCH")
+          echo "behind=$behind" >> "$GITHUB_OUTPUT"
+          echo "$BASE_BRANCH is $behind commits behind upstream/$UPSTREAM_BRANCH"
+
+      - name: Merge into the sync branch
+        id: merge
+        if: steps.check.outputs.behind != '0'
+        run: |
+          # Reuse the sync branch when it exists so updates are plain
+          # fast-forward pushes; the fork never force pushes.
+          if git ls-remote --exit-code --heads origin "$SYNC_BRANCH" >/dev/null; then
+            git fetch --no-tags origin "$SYNC_BRANCH"
+            git checkout -B "$SYNC_BRANCH" "origin/$SYNC_BRANCH"
+            if ! git merge --no-edit "origin/$BASE_BRANCH"; then
+              git merge --abort || true
+              git checkout -B "$SYNC_BRANCH" "origin/$BASE_BRANCH"
+              echo "stale=true" >> "$GITHUB_OUTPUT"
+            fi
+          else
+            git checkout -B "$SYNC_BRANCH" "origin/$BASE_BRANCH"
+          fi
+
+          upstream_sha=$(git rev-parse --short "upstream/$UPSTREAM_BRANCH")
+          if git merge --no-ff "upstream/$UPSTREAM_BRANCH" \
+              -m "chore: merge upstream desktop/desktop development" \
+              -m "Up to desktop/desktop@$upstream_sha."; then
+            echo "result=merged" >> "$GITHUB_OUTPUT"
+          else
+            git diff --name-only --diff-filter=U > "$RUNNER_TEMP/conflicts.txt"
+            git merge --abort
+            echo "result=conflict" >> "$GITHUB_OUTPUT"
+          fi
+          echo "upstream_sha=$upstream_sha" >> "$GITHUB_OUTPUT"
+
+      - name: Push the sync branch
+        id: push
+        if: steps.merge.outputs.result == 'merged'
+        run: |
+          if [[ "${{ steps.merge.outputs.stale }}" == 'true' ]]; then
+            echo "::warning::$SYNC_BRANCH diverged from $BASE_BRANCH; delete it and run again."
+          fi
+          if git push origin "HEAD:refs/heads/$SYNC_BRANCH" 2> "$RUNNER_TEMP/push.txt"; then
+            echo "pushed=true" >> "$GITHUB_OUTPUT"
+          else
+            cat "$RUNNER_TEMP/push.txt"
+            echo "pushed=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Open or update the pull request
+        if: steps.push.outputs.pushed == 'true'
+        run: |
+          body=$(cat <<EOF
+          Merges ${{ steps.check.outputs.behind }} new commits from
+          desktop/desktop \`$UPSTREAM_BRANCH\` (up to
+          desktop/desktop@${{ steps.merge.outputs.upstream_sha }}) into \`$BASE_BRANCH\`.
+
+          Opened by the weekly upstream sync workflow. Before merging (with a
+          merge commit, not squash or rebase):
+
+          - Fork CI is green on this branch.
+          - The fork's touch points listed in ARCHITECTURE.md still behave.
+          - The app builds and starts locally.
+          EOF
+          )
+          pr=$(gh pr list --head "$SYNC_BRANCH" --base "$BASE_BRANCH" --state open --json number --jq '.[0].number')
+          if [[ -n "$pr" ]]; then
+            gh pr edit "$pr" --body "$body"
+            echo "Updated pull request #$pr"
+          else
+            gh pr create --head "$SYNC_BRANCH" --base "$BASE_BRANCH" \
+              --title "Merge upstream desktop/desktop development" --body "$body"
+          fi
+          # Pull requests opened with GITHUB_TOKEN don't trigger other
+          # workflows, so start Fork CI on the branch explicitly.
+          gh workflow run fork-ci.yml --ref "$SYNC_BRANCH" || true
+
+      - name: Report a conflict or rejected push
+        if:
+          steps.merge.outputs.result == 'conflict' || steps.push.outputs.pushed
+          == 'false'
+        run: |
+          if [[ "${{ steps.merge.outputs.result }}" == 'conflict' ]]; then
+            reason="Merging desktop/desktop@${{ steps.merge.outputs.upstream_sha }} into \`$BASE_BRANCH\` conflicts in:"
+            details=$(sed 's/^/- `/; s/$/`/' "$RUNNER_TEMP/conflicts.txt")
+          else
+            reason="The merge succeeded but pushing \`$SYNC_BRANCH\` was rejected, most likely because upstream changed workflow files and UPSTREAM_SYNC_TOKEN isn't set:"
+            details=$(printf '```\n%s\n```' "$(cat "$RUNNER_TEMP/push.txt")")
+          fi
+          body=$(printf '%s\n\n%s\n\nMerge by hand following "Syncing with upstream" in AGENTS.md.\n\nRun: %s/%s/actions/runs/%s\n' \
+            "$reason" "$details" "$GITHUB_SERVER_URL" "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID")
+          issue=$(gh issue list --state open --search "\"$ISSUE_TITLE\" in:title" --json number --jq '.[0].number')
+          if [[ -n "$issue" ]]; then
+            gh issue comment "$issue" --body "$body"
+          else
+            gh issue create --title "$ISSUE_TITLE" --body "$body"
+          fi
+          echo "::error::Upstream sync needs a manual merge, see the issue."
+          exit 1

@@ -487,3 +487,8 @@ refuses to run while the installed app is open.
 on Ubuntu for pushes to `development` and for pull requests. Upstream's
 workflows stay in the tree unchanged but are disabled in the fork's Actions
 settings; they target runners and secrets the fork doesn't have.
+
+`.github/workflows/upstream-sync.yml` runs weekly: it merges upstream's
+`development` into the `upstream-sync` branch, opens or updates a pull request
+into `development` and starts Fork CI on it, or opens an issue when the merge
+conflicts. The procedure is in `AGENTS.md`, "Syncing with upstream".

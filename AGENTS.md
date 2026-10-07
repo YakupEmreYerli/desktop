@@ -32,13 +32,40 @@ Linux system requirements: `docs/contributing/setup-linux.md` (upstream).
 
 - Branches and remotes: work on `development`. `origin` is the fork,
   `upstream` is desktop/desktop, `shiftkey` is the old Linux fork (reference only).
-- Sync regularly: `git fetch upstream && git merge upstream/development`.
+- Sync regularly, see "Syncing with upstream" below.
 - **Keep the conflict surface small.** Fork features live in their own files;
   edits to upstream files stay at hook level (an import plus a few lines). The
   current touch points are listed in `ARCHITECTURE.md`; update that list when
   you add or remove one.
 - Don't edit upstream workflows, templates or the root `README.md`. The fork's
   README is `.github/README.md`, which GitHub shows instead of the root one.
+
+## Syncing with upstream
+
+The `Upstream sync` workflow (`.github/workflows/upstream-sync.yml`) merges
+upstream's `development` into the `upstream-sync` branch every Monday and
+opens or updates a pull request into `development`. On a conflict it opens an
+issue listing the files instead. Merge the pull request with a merge commit,
+never squash or rebase, after Fork CI passes on it. By hand, or when the
+workflow reports a conflict:
+
+1. `git fetch --no-tags upstream development`, then on `development`:
+   `git merge --no-ff upstream/development`. Never rebase the fork onto
+   upstream and never force push.
+2. Resolve conflicts keeping every fork feature. Start from the touch points
+   in `ARCHITECTURE.md`; adapt fork code to upstream API changes rather than
+   reverting upstream. Keep the fork's own files separate.
+3. `nvm use && yarn`, then `yarn lint`, `yarn test:setup && yarn test:unit`
+   and `yarn build:prod`. Fix what the merge broke in follow-up commits.
+4. Build and install locally (`script/linux-kur.sh`), start the app and check
+   it opens on the repository list.
+5. Update `ARCHITECTURE.md` if a touch point moved, then push `development`.
+
+The workflow's pull request needs "Allow GitHub Actions to create and approve
+pull requests" in the repository's Actions settings. Weeks where upstream
+changed workflow files need the `UPSTREAM_SYNC_TOKEN` secret described at the
+top of the workflow; without it the push is rejected and reported in the
+issue.
 
 ## Commits and pushing
 
