@@ -6,6 +6,8 @@ import * as React from 'react'
 import * as ReactDOM from 'react-dom'
 import * as Path from 'path'
 import { App } from './app'
+import { API } from '../lib/api'
+import { installAuthenticatedImageTokenHandler } from '../lib/authenticated-image-token-handler'
 import {
   Dispatcher,
   externalEditorErrorHandler,
@@ -281,6 +283,9 @@ const statsStore = new StatsStore(
 )
 
 const accountsStore = new AccountsStore(localStorage, TokenStore)
+API.setTokenProvider(accountsStore.resolveToken)
+API.onTokenInvalidated(accountsStore.handleTokenInvalidated)
+installAuthenticatedImageTokenHandler(accountsStore.resolveToken)
 
 const signInStore = new SignInStore(accountsStore)
 
