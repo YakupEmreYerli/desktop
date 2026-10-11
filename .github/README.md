@@ -20,7 +20,7 @@ A community fork of GitHub Desktop for Windows and Linux.
 
 <br>
 
-<img src="assets/hero.png" alt="GitHub Desktop fork showing a PDF diff with old and new pages side by side" width="100%">
+<img src="assets/banner.en.png" alt="GitHub Desktop community fork for Linux and Windows: PDF, SVG and HTML diffs side by side, commit messages by Claude, repository groups" width="100%">
 
 </div>
 

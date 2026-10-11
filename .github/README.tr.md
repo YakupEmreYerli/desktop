@@ -20,7 +20,7 @@ GitHub Desktop'ın Windows ve Linux için topluluk çatalı.
 
 <br>
 
-<img src="assets/hero.png" alt="Eski ve yeni PDF sayfalarını yan yana gösteren GitHub Desktop çatalı" width="100%">
+<img src="assets/banner.tr.png" alt="GitHub Desktop'ın Linux ve Windows için topluluk çatalı: PDF, SVG ve HTML farkları yan yana, commit mesajını Claude yazar, depolar gruplanır" width="100%">
 
 </div>
 
