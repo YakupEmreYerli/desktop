@@ -27,7 +27,7 @@ export async function readRepositoryList(): Promise<ReadonlyArray<IRepositoryLis
   try {
     const path = join(getUserDataPath(), RepositoryListFileName)
     return JSON.parse(await readFile(path, 'utf8'))
-  } catch (e) {
+  } catch {
     return null
   }
 }
