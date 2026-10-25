@@ -24,7 +24,9 @@ function getSharedWorker(): Promise<PDFWorker> {
   if (sharedWorker === null) {
     sharedWorker = readFile(Path.join(runtimeDir, 'pdf.worker.min.mjs')).then(
       source => {
-        const blob = new Blob([source], { type: 'text/javascript' })
+        const blob = new Blob([new Uint8Array(source)], {
+          type: 'text/javascript',
+        })
         const url = URL.createObjectURL(blob)
         const port = new Worker(url, { type: 'module' })
         return PDFWorker.create({ port })
